@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 from face_match import FaceMatch
 import time
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--img1", type=str, required=True)
-parser.add_argument("--img2", type=str, required=True)
-args = parser.parse_args()
+#parser = argparse.ArgumentParser()
+#parser.add_argument("--img1", type=str, required=True)
+#parser.add_argument("--img2", type=str, required=True)
+#args = parser.parse_args()
 
 
 def sample_demo(img_base, img_target, face_match):
@@ -54,9 +54,11 @@ def blur_avg_box_experiment(img_base, img_target, face_match, box_max_size=40):
     box_sizes = []
 
     for i in range(1, box_max_size):
+        start_time2 = time.time()
         img_target_blur = cv2.blur(img_target, (5 + i, 5 + i))
+        print("--- %s seconds ---" % (time.time() - start_time2))
         distance = face_match.compare_faces(img_base, img_target_blur)
-        print("Box size AVG experiment - Iteration {} box size {} distance {}".format(i, i+5, distance))
+        #print("Box size AVG experiment - Iteration {} box size {} distance {}".format(i, i+5, distance))
         if distance == -1:
             print("Face detection/align failed")
             break
@@ -78,7 +80,7 @@ img1 = cv2.imread("./images/Obama_signs.jpg")
 img2 = cv2.imread("./images/obama_alone_office.jpg")
 
 start_time = time.time()
-face_match_distance = fm.compare_faces(img1, img2, use_white=True)
+face_match_distance = fm.compare_faces(img1, img2)
 print("--- %s seconds ---" % (time.time() - start_time))
 
 face_match_threshold = 1.10
@@ -89,7 +91,7 @@ print("Result = " + ("same person" if face_match_distance <= face_match_threshol
 sample_demo(img1, img2, fm)
 
 # Box size experiment
-box_sizes, distances = blur_avg_box_experiment(img1, img2, fm, 10)
+box_sizes, distances = blur_avg_box_experiment(img1, img2, fm, 100)
 #plt.subplot(211)
 plt.plot(box_sizes, distances)
 #plt.title('Box size and Repetition experiments')

@@ -35,8 +35,8 @@ class FaceMatch:
         self.phase_train_placeholder = tf.get_default_graph().get_tensor_by_name("phase_train:0")
         self.embedding_size = self.embeddings.get_shape()[1]
 
-    def get_face(self, img, use_white, debug_faces):
-        faces = []
+    def extract_face(self, img):
+        faces_boxes = []
         img_size = np.asarray(img.shape)[0:2]
         bounding_boxes, _ = detect_face.detect_face(img, self.minsize, self.pnet, self.rnet, self.onet, self.threshold, self.factor)
         if not len(bounding_boxes) == 0:
@@ -49,22 +49,38 @@ class FaceMatch:
                     bb[2] = np.minimum(det[2] + self.margin / 2, img_size[1])
                     bb[3] = np.minimum(det[3] + self.margin / 2, img_size[0])
 
-                    cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
-                    resized = cv2.resize(cropped, (self.input_image_size, self.input_image_size), interpolation=cv2.INTER_CUBIC)
+                    faces_boxes.append([bb[0], bb[1], bb[2], bb[3]])
 
-                    if use_white:
-                        resized = facenet.prewhiten(resized)
+        return faces_boxes
 
-                    if debug_faces:
-                        plt.subplot(131), plt.imshow(img), plt.title('Original')
-                        plt.subplot(132), plt.imshow(cropped), plt.title('Cropped')
-                        if use_white:
-                            plt.subplot(133), plt.imshow(resized), plt.title('Whited')
-                        plt.xticks([]), plt.yticks([])
-                        plt.show()
+    def get_face_embeddings(self, faces_boxes, img, debug_faces):
 
-                    faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': self.get_embedding(resized)})
-        return faces
+        embeddings = []
+        if not len(faces_boxes) == 0:
+            for box in faces_boxes:
+
+                bb = np.zeros(4, dtype=np.int32)
+                bb[0] = box[0]
+                bb[1] = box[1]
+                bb[2] = box[2]
+                bb[3] = box[3]
+
+                cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
+
+                resized = cv2.resize(cropped, (self.input_image_size, self.input_image_size), interpolation=cv2.INTER_CUBIC)
+                prewhiten = facenet.prewhiten(resized)
+
+                if debug_faces:
+                    plt.subplot(132), plt.imshow(cropped), plt.title('Cropped')
+                    plt.subplot(133), plt.imshow(prewhiten), plt.title('Whited and Resized to 160 x 160')
+                    plt.xticks([]), plt.yticks([])
+                    plt.show()
+
+                    #faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': self.get_embedding(prewhiten)})
+
+                embeddings.append({'face': resized, 'embedding': self.get_embedding(prewhiten)})
+
+        return embeddings
 
     def get_embedding(self, resized):
         reshaped = resized.reshape(-1, self.input_image_size, self.input_image_size, 3)
@@ -72,16 +88,30 @@ class FaceMatch:
         embedding = self.sess.run(self.embeddings, feed_dict=feed_dict)
         return embedding
 
-    def compare_faces(self, img1, img2, use_white=True, debug_faces=False):
+    def compare_faces(self, img1, img2, debug_faces=False):
         if self.distance_model == 'euclidean':
-            return self.compare_faces_ed(img1, img2, use_white, debug_faces)
+            return self.compare_faces_ed(img1, img2, debug_faces)
         elif self.distance_model == 'cosine':
-            return self.compare_faces_cd(img1, img2, use_white, debug_faces)
+            return self.compare_faces_cd(img1, img2, debug_faces)
 
     # Calculates distance based in Euclidian Distance
-    def compare_faces_ed(self, img1, img2, use_white, debug_faces):
-        face1 = self.get_face(img1, use_white, debug_faces)
-        face2 = self.get_face(img2, use_white, debug_faces)
+    def compare_faces_ed(self, img1, img2, debug_faces):
+        boxes1 = self.extract_face(img1)
+        face1 = self.get_face_embeddings(boxes1, img1, debug_faces)
+
+        boxes2 = self.extract_face(img2)
+        face2 = self.get_face_embeddings(boxes2, img2, debug_faces)
+        if face1 and face2:
+            dist = np.sqrt(np.sum(np.square(np.subtract(face1[0]['embedding'], face2[0]['embedding']))))
+            return dist
+        else:
+            return -1
+
+    def compare_faces_cropped(self, boxes1, boxes2, img1, img2, debug_faces=False):
+
+        face1 = self.get_face_embeddings(boxes1, img1, debug_faces)
+        face2 = self.get_face_embeddings(boxes2, img2, debug_faces)
+
         if face1 and face2:
             dist = np.sqrt(np.sum(np.square(np.subtract(face1[0]['embedding'], face2[0]['embedding']))))
             return dist
@@ -89,9 +119,12 @@ class FaceMatch:
             return -1
 
     # Calculates distance based in Cosine Difference. Meant to be used with 20180402-114759 model
-    def compare_faces_cd(self, img1, img2, use_white=True, debug_faces=False):
-        face1 = self.get_face(img1, use_white, debug_faces)
-        face2 = self.get_face(img2, use_white, debug_faces)
+    def compare_faces_cd(self, img1, img2, debug_faces=False):
+        boxes1 = self.extract_face(img1)
+        face1 = self.get_face_embeddings(boxes1, img1, debug_faces)
+
+        boxes2 = self.extract_face(img2)
+        face2 = self.get_face_embeddings(boxes2, img2, debug_faces)
         if face1 and face2:
             dist = self.cosine_similarity(face1[0]['embedding'], face2[0]['embedding'])
             return dist
