@@ -58,7 +58,7 @@ def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, b
 
 face_det = fm.FaceMatch()
 
-model_path = 'faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb'
+model_path = 'object_detection_models/frozen_inference_graph.pb'
 human_det = hd.DetectorAPI(path_to_ckpt=model_path)
 threshold = 0.7
 
@@ -77,23 +77,27 @@ df = pd.DataFrame({'blur': blur_iterations,
                    'pd': hd_scores})
 
 
-plt.plot('blur', 'fm', data=df, marker='', color='green', linewidth=2, label='Face Match (Euclidean Distance)')
-plt.plot('blur', 'pd', data=df, marker='', color='blue', linewidth=2, linestyle='dashed', label='Person Detection (Accuracy %)')
-plt.xticks(range(min(blur_iterations), max(blur_iterations), 10))
-plt.legend()
-
-plt.xlabel('Average 5x5 Blur rounds')
-plt.ylabel('Euclidean Distance/Accuracy')
-
-plt.show()
-
-# fig = plt.figure()
-# power = [float(i*0.33) for i in blur_iterations]
+# plt.plot('blur', 'fm', data=df, marker='', color='green', linewidth=2, label='Face Match (Euclidean Distance)')
+# plt.plot('blur', 'pd', data=df, marker='', color='blue', linewidth=2, linestyle='dashed', label='Person Detection (Accuracy %)')
+# plt.xticks(range(min(blur_iterations), max(blur_iterations), 10))
+# plt.legend()
 #
-# ax = plt.axes(projection='3d')
-# #ax.scatter3D(fm_scores, hd_scores, power, c=power, cmap='Greens');
-# ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none')
-# ax.set_title('surface')
+# plt.xlabel('Average 5x5 Blur rounds')
+# plt.ylabel('Euclidean Distance/Accuracy')
 #
 # plt.show()
+
+fig = plt.figure()
+power = [float(i*0.33) for i in blur_iterations]
+
+ax = plt.axes(projection='3d')
+ax.scatter3D(fm_scores, hd_scores, power, c=power, cmap='Greens');
+#ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
+ax.set_title('Power x Privacy x Utility')
+
+ax.set_xlabel('Privacy', fontsize=20)
+ax.set_ylabel('Utility', fontsize=20)
+ax.set_zlabel('Power', fontsize=20)
+
+plt.show()
 

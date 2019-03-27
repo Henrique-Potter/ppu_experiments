@@ -23,7 +23,7 @@ def blur_avg_box_experiment(img_base, iter_max):
     return scores_list
 
 
-model_path = 'faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb'
+model_path = 'object_detection_models/frozen_inference_graph.pb'
 odapi = hd.DetectorAPI(path_to_ckpt=model_path)
 threshold = 0.7
 

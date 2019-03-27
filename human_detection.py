@@ -5,7 +5,12 @@ import os
 
 
 class DetectorAPI:
-    def __init__(self, path_to_ckpt):
+
+    def __init__(self, path_to_ckpt=None):
+
+        if path_to_ckpt is None:
+            path_to_ckpt = 'object_detection_models/frozen_inference_graph.pb'
+
         self.path_to_ckpt = os.path.expanduser(path_to_ckpt)
 
         self.detection_graph = tf.Graph()
