@@ -76,7 +76,7 @@ fm = FaceMatch()
 
 #img1 = cv2.imread("./images/daniel-radcliffe.jpg")
 #img1 = cv2.imread("./images/Barack_Obama.jpg")
-img1 = cv2.imread("./images/Obama_signs.jpg")
+img1 = cv2.imread("./images/obama_signs.jpg")
 img2 = cv2.imread("./images/obama_alone_office.jpg")
 
 start_time = time.time()

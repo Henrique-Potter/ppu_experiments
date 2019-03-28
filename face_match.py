@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 class FaceMatch:
 
-    def __init__(self, model_path="20170512-110547/20170512-110547.pb"):
+    def __init__(self, model_path="face_id_models/20170512-110547.pb"):
         # some constants kept as default from facenet
         self.minsize = 20
         self.threshold = [0.6, 0.7, 0.7]
@@ -24,9 +24,9 @@ class FaceMatch:
         # read 20170512-110547 model file downloaded from https://drive.google.com/file/d/0B5MzpY9kBtDVZ2RpVDYwWmxoSUk
         facenet.load_model(model_path)
 
-        if model_path == "20170512-110547/20170512-110547.pb":
+        if model_path == "face_id_models/20170512-110547.pb":
             self.distance_model = 'euclidean'
-        elif model_path == "20180402-114759/20180402-114759.pb":
+        elif model_path == "face_id_models/20180402-114759.pb":
             self.distance_model = 'cosine'
 
         # Get input and output tensors

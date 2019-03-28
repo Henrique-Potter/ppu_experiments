@@ -1,7 +1,7 @@
 import human_detection as hd
-import human_detection_utils as hdu
 import face_match as fm
 import cv2 as cv
+import argparse
 
 
 def blur_avg_box_experiment(fid_model_path, hd_model_path, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", blur_box_size=5):
@@ -59,15 +59,32 @@ def blur_avg_box_experiment(fid_model_path, hd_model_path, img_base_path, img_ad
 
         blur_iterations.append(i)
 
-        if i > 45:
-            hdu.show_detections(img_blurred, boxes, scores, classes, 0.5)
-            key = cv.waitKey(1)
-            if key & 0xFF == ord('q'):
-                break
-
     return blur_iterations, fm_scores, hd_scores
 
 
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fid_m", type=str, required=True)
+    parser.add_argument("--hd_m", type=str, required=True)
+    parser.add_argument("--img_b", type=str, required=True)
+    parser.add_argument("--img_t", type=str, required=True)
+    parser.add_argument("--blur_iter", type=int, required=True)
+    parser.add_argument("--hd_thres", type=float, required=True)
+    parser.add_argument("--mfd", type=bool, required=True)
+    parser.add_argument("--blur_kernel", type=str, required=True)
+    parser.add_argument("--blur_size", type=int, required=True)
+    a = parser.parse_args()
+
+    blur_iters, fm_results, hd_results = blur_avg_box_experiment(a.fid_m,
+                                                                 a.hd_m,
+                                                                 a.img_b,
+                                                                 a.img_t,
+                                                                 a.blur_iter,
+                                                                 a.hd_thres,
+                                                                 a.mfd,
+                                                                 a.blur_kernel,
+                                                                 a.blur_size)
 
 
 

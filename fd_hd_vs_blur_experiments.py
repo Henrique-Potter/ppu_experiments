@@ -1,11 +1,11 @@
 import human_detection as hd
 import human_detection_utils as hdu
 import face_match as fm
-import cv2 as cv
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 import numpy as np
 import pandas as pd
+import cv2 as cv
 
 
 def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, blur_kernel="avg"):
@@ -62,7 +62,7 @@ model_path = 'object_detection_models/frozen_inference_graph.pb'
 human_det = hd.DetectorAPI(path_to_ckpt=model_path)
 threshold = 0.7
 
-img_base = cv.imread("./images/Obama_signs.jpg")
+img_base = cv.imread("./images/obama_signs.jpg")
 img_adversary = cv.imread("./images/obama_alone_office.jpg")
 
 img_base = cv.resize(img_base, (1280, 720))
