@@ -1,5 +1,5 @@
 import tensorflow as tf
-from align import detect_face
+from face_detection import detect_face
 import facenet
 import cv2
 import imutils
@@ -18,8 +18,8 @@ margin = 44
 input_image_size = 160
 
 sess = tf.Session()
-# read pnet, rnet, onet models from align directory and files are det1.npy, det2.npy, det3.npy
-pnet, rnet, onet = detect_face.create_mtcnn(sess, 'align')
+# read pnet, rnet, onet models from face_detection directory and files are det1.npy, det2.npy, det3.npy
+pnet, rnet, onet = detect_face.create_mtcnn(sess, 'face_detection')
 
 # read 20170512-110547 model file downloaded from https://drive.google.com/file/d/0B5MzpY9kBtDVZ2RpVDYwWmxoSUk
 facenet.load_model("20170512-110547/20170512-110547.pb")

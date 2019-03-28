@@ -38,7 +38,7 @@ def blur_avg_rep_experiment(img_base, img_target, face_match, max_repetitions=40
 
         print("Blur AVG Rep experiment - Iteration {} distance {}".format(reps, distance))
         if distance == -1:
-            print("Face detection/align failed")
+            print("Face detection/face_detection failed")
             break
         reps_list.append(reps)
         distances_found.append(distance)
@@ -60,7 +60,7 @@ def blur_avg_box_experiment(img_base, img_target, face_match, box_max_size=40):
         distance = face_match.compare_faces(img_base, img_target_blur)
         #print("Box size AVG experiment - Iteration {} box size {} distance {}".format(i, i+5, distance))
         if distance == -1:
-            print("Face detection/align failed")
+            print("Face detection/face_detection failed")
             break
         distances_found.append(distance)
         box_sizes.append(5 + i)

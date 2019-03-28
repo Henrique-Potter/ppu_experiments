@@ -15,10 +15,11 @@ def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, b
     blur_iterations = []
     img_blurred = img_adversary.copy()
 
+    img_sizes = img_base.shape
     boxes1 = fm_api.extract_face(img_base)
     boxes2 = fm_api.extract_face(img_adversary)
 
-    for i in range(1, iter_max):
+    for iteration in range(1, iter_max):
 
         if blur_kernel == "avg":
             img_blurred = cv.blur(img_blurred, (5, 5))
@@ -28,6 +29,9 @@ def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, b
             img_blurred = cv.medianBlur(img_blurred, 5)
         elif blur_kernel == "bilateralFiltering":
             img_blurred = cv.bilateralFilter(img_blurred, 9, 75, 75)
+        elif blur_kernel == "resizing":
+            img_temp = cv.resize(img_adversary, (int(img_sizes[1]/iteration), int(img_sizes[0]/iteration)))
+            img_blurred = cv.resize(img_temp, (img_sizes[1], img_sizes[0]))
 
         boxes, scores, classes, num = hd_api.process_frame(img_blurred)
         h_boxes, h_scores = hd_api.get_detected_persons(boxes, scores, classes, 0.6)
@@ -45,13 +49,13 @@ def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, b
         else:
             hd_scores.append(0)
 
-        blur_iterations.append(i)
+        blur_iterations.append(iteration)
 
-        if i > 45:
-            hdu.show_detections(img_blurred, boxes, scores, classes, 0.5)
-            key = cv.waitKey(1)
-            if key & 0xFF == ord('q'):
-                break
+        # if iteration > 45:
+        #     hdu.show_detections(img_blurred, boxes, scores, classes, 0.5)
+        #     key = cv.waitKey(1)
+        #     if key & 0xFF == ord('q'):
+        #         break
 
     return blur_iterations, fm_scores, hd_scores
 
@@ -68,7 +72,7 @@ img_adversary = cv.imread("./images/obama_alone_office.jpg")
 img_base = cv.resize(img_base, (1280, 720))
 img_adversary = cv.resize(img_adversary, (1280, 720))
 
-blur_iterations, fm_scores, hd_scores = blur_avg_box_experiment(face_det, human_det, img_base, img_adversary, 100, "avg")
+blur_iterations, fm_scores, hd_scores = blur_avg_box_experiment(face_det, human_det, img_base, img_adversary, 100, "resizing")
 
 power = [float(i*0.33) for i in blur_iterations]
 # Data
@@ -77,27 +81,27 @@ df = pd.DataFrame({'blur': blur_iterations,
                    'pd': hd_scores})
 
 
-# plt.plot('blur', 'fm', data=df, marker='', color='green', linewidth=2, label='Face Match (Euclidean Distance)')
-# plt.plot('blur', 'pd', data=df, marker='', color='blue', linewidth=2, linestyle='dashed', label='Person Detection (Accuracy %)')
-# plt.xticks(range(min(blur_iterations), max(blur_iterations), 10))
-# plt.legend()
-#
-# plt.xlabel('Average 5x5 Blur rounds')
-# plt.ylabel('Euclidean Distance/Accuracy')
-#
-# plt.show()
+plt.plot('blur', 'fm', data=df, marker='', color='green', linewidth=2, label='Face Match (Euclidean Distance)')
+plt.plot('blur', 'pd', data=df, marker='', color='blue', linewidth=2, linestyle='dashed', label='Person Detection (Accuracy %)')
+plt.xticks(range(min(blur_iterations), max(blur_iterations), 10))
+plt.legend()
 
-fig = plt.figure()
-power = [float(i*0.33) for i in blur_iterations]
-
-ax = plt.axes(projection='3d')
-ax.scatter3D(fm_scores, hd_scores, power, c=power, cmap='Greens');
-#ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
-ax.set_title('Power x Privacy x Utility')
-
-ax.set_xlabel('Privacy', fontsize=20)
-ax.set_ylabel('Utility', fontsize=20)
-ax.set_zlabel('Power', fontsize=20)
+plt.xlabel('Resizing Image - divided by')
+plt.ylabel('Euclidean Distance/Accuracy')
 
 plt.show()
+
+# fig = plt.figure()
+# power = [float(i*0.33) for i in blur_iterations]
+#
+# ax = plt.axes(projection='3d')
+# ax.scatter3D(fm_scores, hd_scores, power, c=power, cmap='Greens');
+# #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
+# ax.set_title('Power x Privacy x Utility')
+#
+# ax.set_xlabel('Privacy', fontsize=20)
+# ax.set_ylabel('Utility', fontsize=20)
+# ax.set_zlabel('Power', fontsize=20)
+#
+# plt.show()
 
