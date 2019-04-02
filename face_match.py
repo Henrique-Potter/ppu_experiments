@@ -66,7 +66,7 @@ class FaceMatch:
                 bb[3] = box[3]
 
                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
-
+                cv2.imwrite('t.jpg', cropped)
                 resized = cv2.resize(cropped, (self.input_image_size, self.input_image_size), interpolation=cv2.INTER_CUBIC)
                 prewhiten = facenet.prewhiten(resized)
 

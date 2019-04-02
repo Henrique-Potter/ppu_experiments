@@ -1,5 +1,5 @@
 import human_detection as hd
-import human_detection_utils as hdu
+import experiment_functions as hdu
 import cv2 as cv
 
 
