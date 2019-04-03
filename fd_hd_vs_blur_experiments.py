@@ -110,7 +110,7 @@ print(df)
 # plt.show()
 
 fig = plt.figure()
-power = [float(i*0.33) for i in blur_iterations]
+power = [float(i*0.33) for i in df.iloc[:,0:2]]
 
 ax = plt.axes(projection='3d')
 s=ax.scatter3D(fm_scores[:, 0], hd_scores[:, 0], power, c=power, cmap='Greens')

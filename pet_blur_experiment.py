@@ -1,4 +1,5 @@
 import experiment_functions as ef
+from pathlib import Path
 import argparse
 
 
@@ -16,12 +17,25 @@ if __name__ == "__main__":
     parser.add_argument("--blur_size", type=int, required=True)
     a = parser.parse_args()
 
-    blur_iters, fm_results, hd_results = ef.blur_iter_experiment(a.fid_m,
-                                                                 a.hd_m,
-                                                                 a.img_b,
-                                                                 a.img_t,
-                                                                 a.blur_iter,
-                                                                 a.hd_thres,
-                                                                 a.mfd,
-                                                                 a.blur_kernel,
-                                                                 a.blur_size, True)
+    images = Path('./images').glob("*.jpg")
+
+    experiments = ef.BlurExperiments(a.fid_m, a.hd_m)
+
+    for image in images:
+        full_df = experiments.blur_iter_experiment(str(image),
+                                                   str(image),
+                                                   a.blur_iter,
+                                                   a.hd_thres,
+                                                   a.mfd,
+                                                   a.blur_kernel,
+                                                   a.blur_size, True)
+
+        print(full_df)
+
+        if full_df is not None:
+            image_name = Path(image).resolve().stem
+            full_df.to_pickle("./results/{}_data.pkl".format(image_name))
+        else:
+            pass
+
+
