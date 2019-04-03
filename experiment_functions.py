@@ -1,5 +1,6 @@
 import human_detection as hd
 import face_match as fm
+import numpy as np
 import cv2 as cv
 
 
@@ -73,7 +74,6 @@ def blur_iter_experiment(fid_model_path, hd_model_path, img_base_path, img_adver
         h_boxes, h_scores = human_det.get_detected_persons(boxes, scores, classes, hd_threshold)
 
         distance = face_det.compare_faces_cropped(img_base_faces_box, img_adversary_faces_box, img_base, img_blurred)
-        fm_scores.append(distance)
 
         if map_face_detection:
             detected_blurred_faces = face_det.extract_face(img_blurred)
@@ -83,19 +83,23 @@ def blur_iter_experiment(fid_model_path, hd_model_path, img_base_path, img_adver
             fm_scores.append(distance)
 
         if h_scores:
-            hd_scores.append(h_scores)
+            if len(h_scores) > 1:
+                hd_scores.append([h_scores[0], 1])
+            else:
+                hd_scores.append([h_scores[0], 0])
         else:
             hd_scores.append(0)
+
         print(h_scores)
 
         blur_iterations.append(i)
 
         if preview is True:
-            show_detections(img_blurred, boxes, img_adversary_faces_box, scores, classes, 0.5)
+            show_detections(img_blurred, h_boxes, img_adversary_faces_box, scores, classes, 0.5)
             key = cv.waitKey(1)
             if key & 0xFF == ord('q'):
                 break
 
-    return blur_iterations, fm_scores, hd_scores
+    return np.array(blur_iterations), np.array(fm_scores), np.array(hd_scores)
 
 

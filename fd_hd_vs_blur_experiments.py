@@ -9,6 +9,7 @@ import cv2 as cv
 
 import experiment_functions as ef
 
+
 def blur_avg_box_experiment(fm_api, hd_api, img_base, img_adversary, iter_max, blur_kernel="avg"):
 
     hd_scores = []
@@ -94,10 +95,10 @@ blur_iterations, fm_scores, hd_scores = ef.blur_iter_experiment(face_model_path,
 power = [float(i*0.33) for i in blur_iterations]
 # Data
 df = pd.DataFrame({'blur': blur_iterations,
-                   'fm': fm_scores,
-                   'pd': hd_scores})
+                   'fm': fm_scores[:, 0],
+                   'pd': hd_scores[:, 0]})
 
-
+print(df)
 # plt.plot('blur', 'fm', data=df, marker='', color='green', linewidth=2, label='Face Match (Euclidean Distance)')
 # plt.plot('blur', 'pd', data=df, marker='', color='blue', linewidth=2, linestyle='dashed', label='Person Detection (Accuracy %)')
 # plt.xticks(range(min(blur_iterations), max(blur_iterations), 10))
@@ -112,7 +113,7 @@ fig = plt.figure()
 power = [float(i*0.33) for i in blur_iterations]
 
 ax = plt.axes(projection='3d')
-s=ax.scatter3D(fm_scores, hd_scores, power, c=power, cmap='Greens')
+s=ax.scatter3D(fm_scores[:, 0], hd_scores[:, 0], power, c=power, cmap='Greens')
 s.set_edgecolors = s.set_facecolors = lambda *args:None
 #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
 ax.set_title('Power x Privacy x Utility')
