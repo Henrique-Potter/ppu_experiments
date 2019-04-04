@@ -56,12 +56,6 @@ class BlurExperiments:
 
     def blur_iter_experiment(self, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", blur_box_size=5, preview=False):
 
-        adv_image_name = Path(img_adversary_path).resolve().stem
-        cache_pickle_name = "./results/{}_data.pkl".format(adv_image_name)
-
-        if os.path.exists(cache_pickle_name):
-            return None
-
         img_base = cv.imread(img_base_path)
         img_adversary = cv.imread(img_adversary_path)
 
@@ -111,7 +105,7 @@ class BlurExperiments:
 
             distance = face_det.compare_faces_cropped(img_base_faces_box, img_adversary_faces_box, img_base, img_blurred)
 
-            if map_face_detection:
+            if map_face_detection is 'y':
                 detected_blurred_faces = face_det.extract_face(img_blurred)
                 fm_scores.append([distance, len(detected_blurred_faces) is not 0])
                 print([distance, len(detected_blurred_faces) is not 0])
