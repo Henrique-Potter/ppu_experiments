@@ -3,3 +3,4 @@
 venv/
 video/TownCentreXVID.avi
 results/
+coco_annotations_db/

@@ -39,20 +39,20 @@ for image in images:
 
         full_df = pd.read_pickle(pkl_data_path)
 
-    power = [float(i*0.33) for i in full_df.iloc[:, 0]]
+# power = [float(i*0.33) for i in full_df.iloc[:, 0]]
 
-    ax = plt.axes(projection='3d')
-
-    persons_detected = np.array(full_df.iloc[:, 3])
-
-    s = ax.scatter3D(full_df.iloc[:, 1], full_df.iloc[:, 3], power, c=power, cmap='Greens')
-
-    #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
-    ax.set_title('Power x Privacy x Utility')
-
-    ax.set_xlabel('Privacy', fontsize=20)
-    ax.set_ylabel('Utility', fontsize=20)
-    ax.set_zlabel('Power', fontsize=20)
-
-    plt.show()
+# ax = plt.axes(projection='3d')
+#
+# persons_detected = np.array(full_df.iloc[:, 3])
+#
+# s = ax.scatter3D(full_df.iloc[:, 1], full_df.iloc[:, 3], power, c=power, cmap='Greens')
+#
+# #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
+# ax.set_title('Power x Privacy x Utility')
+#
+# ax.set_xlabel('Privacy', fontsize=20)
+# ax.set_ylabel('Utility', fontsize=20)
+# ax.set_zlabel('Power', fontsize=20)
+#
+# plt.show()
 
