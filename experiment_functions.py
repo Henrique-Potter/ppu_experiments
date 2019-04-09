@@ -79,6 +79,8 @@ class BlurExperiments:
 
         if blur_kernel == "resizing":
             iter_max = min(img_base.shape[0:2])
+        else:
+            iter_max = iter_max + 1
 
         for i in range(1, iter_max):
 
@@ -110,7 +112,8 @@ class BlurExperiments:
                 fm_scores.append([distance, len(detected_blurred_faces) is not 0])
                 print([distance, len(detected_blurred_faces) is not 0])
             else:
-                fm_scores.append(distance)
+                fm_scores.append([distance, distance])
+                print([distance])
 
             if len(h_scores) > 0:
                 hd_scores.append(h_scores)

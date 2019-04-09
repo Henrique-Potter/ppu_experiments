@@ -16,9 +16,10 @@ if __name__ == "__main__":
     parser.add_argument("--blur_kernel", type=str, required=True)
     parser.add_argument("--blur_size", type=int, required=True)
     parser.add_argument("--use_cache", type=str, required=True)
+    parser.add_argument("--images", type=str, required=True)
     a = parser.parse_args()
 
-    images = Path('./images').glob("*.jpg")
+    images = Path(a.images).glob("*.jpg")
 
     experiments = ef.BlurExperiments(a.fid_m, a.hd_m)
 
@@ -43,6 +44,6 @@ if __name__ == "__main__":
             print("Time elapsed: {} seconds".format(end - start))
             print("Saving data to Pickle format")
             image_name = Path(image).resolve().stem
-            full_df.to_pickle("./results/{}_data.pkl".format(image_name))
+            full_df.to_pickle("./results/{}_{}_data.pkl".format(image_name, a.blur_kernel))
 
             print("\n--------Processing finished----------\n")

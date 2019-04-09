@@ -25,10 +25,10 @@ nms2 = set([cat['supercategory'] for cat in cats])
 print('COCO supercategories: \n{}'.format(' '.join(nms2)))
 
 catIds = ins_coco.getCatIds(catNms=['person'])
-
 imgIds = ins_coco.getImgIds(catIds=catIds)
 
 annIds = keyp_coco.getAnnIds(imgIds=imgIds[0], catIds=catIds, iscrowd=None)
+number_of_persons = len(annIds)
 anns = keyp_coco.loadAnns(annIds)
 
 print(catIds)

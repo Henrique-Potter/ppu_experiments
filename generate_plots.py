@@ -1,43 +1,65 @@
-import human_detection as hd
-import experiment_functions as hdu
-import face_match as fm
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
-import numpy as np
 import pandas as pd
-import cv2 as cv
+import os
+import time
 import experiment_functions as ef
 from pathlib import Path
+import numpy as np
 
 
 face_model_path = "face_id_models/20170512-110547.pb"
 hd_model_path = "object_detection_models/frozen_inference_graph.pb"
 hd_threshold = 0.7
-iterations = 50
-map_face_detection = True
+iterations = 10
+map_face_detection = 'y'
 blur_kernel = "avg"
 kernel_size = 5
+use_cache = 'n'
 
-images = Path('./images').glob("*.jpg")
+images = Path('D:\\Downloads\\train2017').glob("*.jpg")
 
 experiments = ef.BlurExperiments(face_model_path, hd_model_path)
 
 for image in images:
-    full_df = experiments.blur_iter_experiment(str(image),
-                                               str(image),
-                                               iterations,
-                                               hd_threshold,
-                                               map_face_detection,
-                                               blur_kernel,
-                                               kernel_size, True)
 
-    fig = plt.figure()
+    if np.random.randint(0, 100) > 1:
+        print('Skipped {}'.format(image))
+        continue
 
-    if full_df is None:
+    image_name = Path(image).resolve().stem
+    cache_pickle_name = "./results/{}_{}_data.pkl".format(image_name, blur_kernel)
+
+    if use_cache is not 'y':
+
+        print("\n--------Processing img number:{}----------\n".format(image_name))
+        start = time.time()
+
+        full_df = experiments.blur_iter_experiment(str(image),
+                                                   str(image),
+                                                   iterations,
+                                                   hd_threshold,
+                                                   map_face_detection,
+                                                   blur_kernel,
+                                                   kernel_size, True)
+
+        end = time.time()
+
+        print("Time elapsed: {} seconds".format(end - start))
+        print("Saving data to Pickle format")
         image_name = Path(image).resolve().stem
-        pkl_data_path = "./results/{}_data.pkl".format(image_name)
+        full_df.to_pickle("./results/{}_{}_data.pkl".format(image_name, blur_kernel))
 
-        full_df = pd.read_pickle(pkl_data_path)
+        print("\n--------Processing finished----------\n")
+
+    elif os.path.exists(cache_pickle_name):
+            image_name = Path(image).resolve().stem
+            pkl_data_path = "./results/{}_data.pkl".format(image_name)
+            full_df = pd.read_pickle(pkl_data_path)
+
+
+
+
+
+#fig = plt.figure()
 
 # power = [float(i*0.33) for i in full_df.iloc[:, 0]]
 
