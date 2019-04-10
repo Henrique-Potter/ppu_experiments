@@ -31,8 +31,6 @@ def main_method():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fid_m", type=str, required=True)
     parser.add_argument("--hd_m", type=str, required=True)
-    parser.add_argument("--img_b", type=str, required=True)
-    parser.add_argument("--img_t", type=str, required=True)
     parser.add_argument("--blur_iter", type=int, required=True)
     parser.add_argument("--hd_thres", type=float, required=True)
     parser.add_argument("--mfd", type=str, required=True)
