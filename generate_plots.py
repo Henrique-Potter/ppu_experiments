@@ -45,7 +45,6 @@ for image in images:
 
         print("Time elapsed: {} seconds".format(end - start))
         print("Saving data to Pickle format")
-        image_name = Path(image).resolve().stem
         full_df.to_pickle("./results/{}_{}_data.pkl".format(image_name, blur_kernel))
 
         print("\n--------Processing finished----------\n")
