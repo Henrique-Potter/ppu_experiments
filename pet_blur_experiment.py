@@ -1,8 +1,6 @@
 from concurrent.futures.thread import ThreadPoolExecutor
-import threading
 import experiment_functions as ef
 from multiprocessing.dummy import Pool as ThreadPool
-import concurrent.futures
 import human_detection as hd
 import face_match as fm
 from pathlib import Path
@@ -30,7 +28,6 @@ def process_image(image_name, image, args, experiment, results_path):
     print("\n--------Processing finished----------\n")
 
     pool.apply_async(cache_data, args=(args, full_df, image_name, results_path))
-
 
     return full_df
 

@@ -3,9 +3,8 @@ import experiment_functions as hdu
 import matplotlib.pyplot as plt
 import human_detection as hd
 import face_match as fm
-import numpy as np
-
 import pandas as pd
+import numpy as np
 import cv2 as cv
 
 import experiment_functions as ef
@@ -114,7 +113,7 @@ fig = plt.figure()
 power = [float(i*0.33) for i in df.iloc[:,0:2]]
 
 ax = plt.axes(projection='3d')
-s=ax.scatter3D(fm_scores[:, 0], hd_scores[:, 0], power, c=power, cmap='Greens')
+s = ax.scatter3D(fm_scores[:, 0], hd_scores[:, 0], power, c=power, cmap='Greens')
 s.set_edgecolors = s.set_facecolors = lambda *args:None
 #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
 ax.set_title('Power x Privacy x Utility')
