@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import os
 
 
@@ -11,6 +10,8 @@ class DetectorAPI:
             path_to_ckpt = 'object_detection_models/frozen_inference_graph.pb'
 
         self.path_to_ckpt = os.path.expanduser(path_to_ckpt)
+
+        import tensorflow as tf
 
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
@@ -33,7 +34,7 @@ class DetectorAPI:
         self.detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
         self.num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
 
-    def process_frame(self, image):
+    def process_frame(self, image, threshold, obj_class):
         # Expand dimensions since the trained_model expects images to have shape: [1, None, None, 3]
         image_np_expanded = np.expand_dims(image, axis=0)
 
@@ -42,15 +43,22 @@ class DetectorAPI:
             feed_dict={self.image_tensor: image_np_expanded})
 
         im_height, im_width, _ = image.shape
-        boxes_list = [None for i in range(res_boxes.shape[1])]
-        for detection_index in range(res_boxes.shape[1]):
-            boxes_list[detection_index] = (
-                        int(res_boxes[0, detection_index, 0]*im_height),
-                        int(res_boxes[0, detection_index, 1]*im_width),
-                        int(res_boxes[0, detection_index, 2]*im_height),
-                        int(res_boxes[0, detection_index, 3]*im_width))
+        np_mask = np.array([im_height, im_width, im_height, im_width], dtype=np.int16)
+        res_boxes[0, :, :] = (res_boxes[0, :, :] * np_mask).astype(int)
 
-        return boxes_list, res_scores[0].tolist(), [int(x) for x in res_classes[0].tolist()], int(res_num[0])
+        humans_detected_map = np.logical_and(res_scores[0] > threshold, res_classes[0] == obj_class)
+
+        # boxes_list = [None for i in range(res_boxes.shape[1])]
+        # np_boxes_list  = zeros[]
+        #
+        # for detection_index in range(res_boxes.shape[1]):
+        #     boxes_list[detection_index] = (
+        #                 int(res_boxes[0, detection_index, 0]*im_height),
+        #                 int(res_boxes[0, detection_index, 1]*im_width),
+        #                 int(res_boxes[0, detection_index, 2]*im_height),
+        #                 int(res_boxes[0, detection_index, 3]*im_width))
+
+        return res_boxes[0], res_scores[0], res_classes[0], humans_detected_map, res_num
 
     def close(self):
         self.sess.close()

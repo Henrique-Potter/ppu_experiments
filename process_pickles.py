@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pylab
 
 
-ins_annFile = './coco_annotations_db/instances_train2017.json'
+ins_annFile = './coco_annotations_db/instances_val2017.json'
 key_points_annFile = './coco_annotations_db/person_keypoints2017.json'
 
 #ins_coco = COCO(ins_annFile)
@@ -20,7 +20,7 @@ keyp_coco = COCO(ins_annFile)
 #catIds = ins_coco.getCatIds(catNms=['person'])
 #imgIds = ins_coco.getImgIds(catIds=catIds)
 
-df_pickles_paths = Path('./results').glob("*.pkl")
+df_pickles_paths = Path('F:/results').glob("*.pkl")
 
 
 df_counter = 0

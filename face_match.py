@@ -1,4 +1,3 @@
-import tensorflow as tf
 import numpy as np
 import facenet
 from face_detection import detect_face
@@ -15,6 +14,8 @@ class FaceMatch:
         self.factor = 0.709
         self.margin = 44
         self.input_image_size = 160
+
+        import tensorflow as tf
 
         self.sess = tf.Session()
 
@@ -36,20 +37,19 @@ class FaceMatch:
         self.embedding_size = self.embeddings.get_shape()[1]
 
     def extract_face(self, img):
-        faces_boxes = []
+
         img_size = np.asarray(img.shape)[0:2]
         bounding_boxes, _ = detect_face.detect_face(img, self.minsize, self.pnet, self.rnet, self.onet, self.threshold, self.factor)
-        if not len(bounding_boxes) == 0:
-            for face in bounding_boxes:
-                if face[4] > 0.50:
-                    det = np.squeeze(face[0:4])
-                    bb = np.zeros(4, dtype=np.int32)
-                    bb[0] = np.maximum(det[0] - self.margin / 2, 0)
-                    bb[1] = np.maximum(det[1] - self.margin / 2, 0)
-                    bb[2] = np.minimum(det[2] + self.margin / 2, img_size[1])
-                    bb[3] = np.minimum(det[3] + self.margin / 2, img_size[0])
-
-                    faces_boxes.append([bb[0], bb[1], bb[2], bb[3]])
+        faces_boxes = np.zeros([len(bounding_boxes), 4], dtype=np.int16)
+        boxes_nr = len(bounding_boxes)
+        if not boxes_nr == 0:
+            for idx in range(boxes_nr):
+                if bounding_boxes[idx, 4] > 0.50:
+                    det = np.squeeze(bounding_boxes[idx, 0:4])
+                    faces_boxes[idx, 0] = np.maximum(det[0] - self.margin / 2, 0)
+                    faces_boxes[idx, 1] = np.maximum(det[1] - self.margin / 2, 0)
+                    faces_boxes[idx, 2] = np.minimum(det[2] + self.margin / 2, img_size[1])
+                    faces_boxes[idx, 3] = np.minimum(det[3] + self.margin / 2, img_size[0])
 
         return faces_boxes
 
@@ -59,22 +59,21 @@ class FaceMatch:
         if not len(faces_boxes) == 0:
             for box in faces_boxes:
 
-                bb = np.zeros(4, dtype=np.int32)
+                bb = np.empty(4, dtype=np.int16)
                 bb[0] = box[0]
                 bb[1] = box[1]
                 bb[2] = box[2]
                 bb[3] = box[3]
 
                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
-                #cv2.imwrite('t.jpg', cropped)
                 resized = cv2.resize(cropped, (self.input_image_size, self.input_image_size), interpolation=cv2.INTER_CUBIC)
                 prewhiten = facenet.prewhiten(resized)
 
-                if debug_faces:
-                    plt.subplot(132), plt.imshow(cropped), plt.title('Cropped')
-                    plt.subplot(133), plt.imshow(prewhiten), plt.title('Whited and Resized to 160 x 160')
-                    plt.xticks([]), plt.yticks([])
-                    plt.show()
+                # if debug_faces:
+                #     plt.subplot(132), plt.imshow(cropped), plt.title('Cropped')
+                #     plt.subplot(133), plt.imshow(prewhiten), plt.title('Whited and Resized to 160 x 160')
+                #     plt.xticks([]), plt.yticks([])
+                #     plt.show()
 
                     #faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': self.get_embedding(prewhiten)})
 

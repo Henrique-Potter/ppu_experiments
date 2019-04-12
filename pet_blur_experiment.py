@@ -1,29 +1,42 @@
+from concurrent.futures.thread import ThreadPoolExecutor
+import threading
 import experiment_functions as ef
+from multiprocessing.dummy import Pool as ThreadPool
+import concurrent.futures
+import human_detection as hd
+import face_match as fm
 from pathlib import Path
-import pandas as pd
 import argparse
 import time
 import os
 
 
-def process_image(image_name, image, args, experiment):
+def process_image(image_name, image, args, experiment, results_path):
 
     print("\n--------Processing img number:{}----------\n".format(image_name))
     start = time.time()
+
     full_df = experiment.blur_iter_experiment(str(image),
                                               str(image),
                                               args.blur_iter,
                                               args.hd_thres,
                                               args.mfd,
                                               args.blur_kernel,
-                                              args.blur_size, True)
+                                              args.blur_size, False)
 
     end = time.time()
     print("Time elapsed: {} seconds".format(end - start))
     print("Saving data to Pickle format")
-    full_df.to_pickle("./results/{}_{}_data.pkl".format(image_name, args.blur_kernel))
     print("\n--------Processing finished----------\n")
+
+    pool.apply_async(cache_data, args=(args, full_df, image_name, results_path))
+
+
     return full_df
+
+
+def cache_data(args, full_df, image_name, results_path):
+    full_df.to_pickle(results_path + "/{}_{}_data.pkl".format(image_name, args.blur_kernel))
 
 
 def main_method():
@@ -38,27 +51,31 @@ def main_method():
     parser.add_argument("--blur_size", type=int, required=True)
     parser.add_argument("--use_cache", type=str, required=True)
     parser.add_argument("--images", type=str, required=True)
+    parser.add_argument("--results", type=str, required=True)
 
     args = parser.parse_args()
     images = Path(args.images).glob("*.jpg")
-    experiment = ef.BlurExperiments(args.fid_m, args.hd_m)
+
+    face_det = fm.FaceMatch(args.fid_m)
+    human_det = hd.DetectorAPI(path_to_ckpt=args.hd_m)
+
+    experiment = ef.BlurExperiments(face_det, human_det)
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(0)
 
     for image in images:
 
         image_name = Path(image).resolve().stem
         cache_pickle_name = "./results/{}_{}_data.pkl".format(image_name, args.blur_kernel)
 
-        if args.use_cache == 'y':
-
-            if os.path.exists(cache_pickle_name):
-                pass
-            else:
-                process_image(image_name, image, args, experiment)
-
+        if args.use_cache == 'y' and os.path.exists(cache_pickle_name):
+            pass
         else:
-            process_image(image_name, image, args, experiment)
+            process_image(image_name, image, args, experiment, args.results)
 
 
 if __name__ == "__main__":
 
+    pool = ThreadPool(4)
+    executor = ThreadPoolExecutor(max_workers=8)
     main_method()
