@@ -63,9 +63,9 @@ def main_method():
     for image in images:
 
         image_name = Path(image).resolve().stem
-        cache_pickle_name = "./results/{}_{}_data.pkl".format(image_name, args.blur_kernel)
+        full_image_path = args.results + "/{}_{}_data.pkl".format(image_name, args.blur_kernel)
 
-        if args.use_cache == 'y' and os.path.exists(cache_pickle_name):
+        if args.use_cache == 'y' and os.path.exists(full_image_path):
             pass
         else:
             process_image(image_name, image, args, experiment, args.results)

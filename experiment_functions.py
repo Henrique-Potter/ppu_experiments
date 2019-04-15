@@ -115,7 +115,7 @@ class BlurExperiments:
             if map_face_detection is 'y':
                 detected_blurred_faces = face_det.extract_face(img_blurred)
                 fm_scores_np[i, 0] = distance
-                fm_scores_np[i, 1] = (detected_blurred_faces is not 0)
+                fm_scores_np[i, 1] = len(detected_blurred_faces) > 0
                 #fm_scores.append([distance, len(detected_blurred_faces) is not 0])
                 #print(fm_scores_np[i, :])
             else:
