@@ -53,7 +53,7 @@ class FaceMatch:
 
         return faces_boxes
 
-    def get_face_embeddings(self, faces_boxes, img, debug_faces):
+    def get_face_embeddings(self, faces_boxes, img, debug_faces=False):
 
         embeddings = []
         if not len(faces_boxes) == 0:
@@ -129,6 +129,11 @@ class FaceMatch:
             return dist
         else:
             return -1
+
+    @staticmethod
+    def euclidean_distance(face1, face2):
+        dist = np.sqrt(np.sum(np.square(np.subtract(face1, face2))))
+        return dist
 
     @staticmethod
     def cosine_similarity(x, y):

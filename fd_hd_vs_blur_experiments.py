@@ -1,10 +1,5 @@
-from mpl_toolkits.mplot3d import axes3d
-import experiment_functions as hdu
 import matplotlib.pyplot as plt
-import human_detection as hd
-import face_match as fm
 import pandas as pd
-import numpy as np
 import cv2 as cv
 
 import experiment_functions as ef
