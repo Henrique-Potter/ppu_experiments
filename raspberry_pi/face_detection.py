@@ -45,22 +45,34 @@ def main_method():
 
     frame = []
 
-    start = time.time()
+    vs = VideoStream(usePiCamera=True).start()
+    time.sleep(2.0)
+    fps = FPS().start()
+    
+    while True:
 
-    f_dist, f_emb, f_boxes = check_face(face_det, frame)
-    if f_dist is not 0:
-        print("Face found")
-    else:
-        learn_new_face(f_emb)
+        
+        frame = vs.read()
+        frame = imutils.resize(frame, width=400)
+        (fH, fW) = frame.shape[:2]
+        
 
-    if args.preview is True:
-        experiment_utils.show_detections(frame, [], f_boxes, 0, 0, 0.5)
-        key = cv.waitKey(1)
-        #if key & 0xFF == ord('q'):
-        #    break
+        start = time.time()
 
-    end = time.time()
-    print("Time to process frame time: {}".format(end - start))
+        f_dist, f_emb, f_boxes = check_face(face_det, frame)
+        if f_dist is not 0:
+            print("Face found")
+        else:
+            learn_new_face(f_emb)
+
+        if args.preview is True:
+            experiment_utils.show_detections(frame, [], f_boxes, 0, 0, 0.5)
+            key = cv.waitKey(1)
+            if key & 0xFF == ord('q'):
+                break
+
+        end = time.time()
+        print("Time to process frame time: {}".format(end - start))
 
     #boxes, scores, classes, humans_detected_map, num = human_det.process_frame(frame, args.hd_thres, 1)
     #h_boxes, h_scores = human_det.get_detected_persons(boxes, scores, classes, hd_threshold)
