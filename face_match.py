@@ -1,5 +1,5 @@
 import numpy as np
-import facenet
+
 from face_detection import detect_face
 import cv2
 import matplotlib.pyplot as plt
@@ -15,6 +15,7 @@ class FaceMatch:
         self.margin = 44
         self.input_image_size = 160
 
+        import facenet
         import tensorflow as tf
 
         self.sess = tf.Session()
@@ -54,6 +55,8 @@ class FaceMatch:
         return faces_boxes
 
     def get_face_embeddings(self, faces_boxes, img, debug_faces=False):
+
+        import facenet
 
         embeddings = []
         if not len(faces_boxes) == 0:

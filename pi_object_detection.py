@@ -12,6 +12,7 @@ import imutils
 import time
 import cv2
 
+
 def classify_frame(net, inputQueue, outputQueue):
 
 	while True:

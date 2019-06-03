@@ -1,7 +1,5 @@
 import numpy as np
-import pandas as pd
 import cv2 as cv
-import time
 
 
 class BlurExperiments:
@@ -52,6 +50,9 @@ class BlurExperiments:
         return resized
 
     def blur_iter_experiment(self, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", blur_box_size=5, preview=False):
+
+        import time
+        import pandas as pd
 
         img_base = cv.imread(img_base_path)
         #img_adversary = cv.imread(img_adversary_path)

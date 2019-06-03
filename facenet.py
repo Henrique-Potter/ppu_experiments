@@ -390,7 +390,7 @@ def load_model(model):
     # Check if the model is a model directory (containing a metagraph and a checkpoint file)
     #  or if it is a protobuf file with a frozen graph
     model_exp = os.path.expanduser(model)
-    if (os.path.isfile(model_exp)):
+    if os.path.isfile(model_exp):
         print('Model filename: %s' % model_exp)
         with tf.gfile.GFile(model_exp, 'rb') as f:
             graph_def = tf.GraphDef()

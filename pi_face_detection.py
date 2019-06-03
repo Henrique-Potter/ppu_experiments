@@ -1,14 +1,14 @@
 import argparse
 
-import imutils
 from imutils.video import VideoStream
 from imutils.video import FPS
-import face_match as fm
-import time
+import imutils
 import experiment_functions
-import cv2 as cv
-import os
+import face_match as fm
 import numpy as np
+import cv2 as cv
+import time
+import os
 
 learned_faces = []
 
@@ -34,6 +34,7 @@ def check_face(face_det, frame, debug=False):
 
 
 def learn_new_face(face_emb):
+    print("Learning new face")
     learned_faces.append(face_emb)
 
 
