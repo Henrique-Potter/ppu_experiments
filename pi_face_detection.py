@@ -14,7 +14,7 @@ red_color = (0, 0, 255)
 
 class PiFaceDet:
 
-    def __init__(self, face_det_model_path, preview):
+    def __init__(self, face_det_model_path='face_id_models\\20170512-110547.pb', preview=True):
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         model_path = os.path.join(dir_path, face_det_model_path)
@@ -104,7 +104,7 @@ class PiFaceDet:
         frames_count = 0
 
         learn_success = False
-        color = red_color
+        color = blue_color
 
         while frames_count < sample_frames:
 

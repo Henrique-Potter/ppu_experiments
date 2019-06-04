@@ -9,9 +9,28 @@ class Peyes(Resource):
                                             observable=True, allow_children=True)
 
         self.face_detection = PiFaceDet()
-        self.payload = "Basic Resource"
+        self.payload = "Peyes"
 
     def render_GET(self, request):
+
+        self.payload = "Failure"
+
+        if request.uri_query == 'identify':
+            found_face = self.face_detection.run_identification(50)
+
+            if found_face:
+                self.payload = "True"
+            else:
+                self.payload = "False"
+
+        if request.uri_query == 'learn_face':
+            learn_face_status = self.face_detection.run_learn_face(50)
+
+            if learn_face_status:
+                self.payload = "True"
+            else:
+                self.payload = "False"
+
         return self
 
     def render_GET_advanced(self, request, response):

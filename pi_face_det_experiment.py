@@ -11,7 +11,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    peyes = PiFaceDet(args.fid_m, args.preview)
+    peyes = PiFaceDet()
     peyes.run_identification(50)
     peyes.run_learn_face(50)
     peyes.run_identification(50)

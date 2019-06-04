@@ -4,3 +4,4 @@ venv/
 video/TownCentreXVID.avi
 results/
 coco_annotations_db/
+raspberry_pi/logging.conf
