@@ -1,8 +1,5 @@
-import argparse
-
 from imutils.video import VideoStream
 from imutils.video import FPS
-import imutils
 import experiment_functions
 import face_match as fm
 import numpy as np
@@ -10,81 +7,82 @@ import cv2 as cv
 import time
 import os
 
+blue_color = (255, 0, 0)
+green_color = (0, 255, 0)
+red_color = (0, 0, 255)
 
-class Peyes:
 
-    def check_face(self, face_det, frame, learned_faces, debug=False):
+class PiFaceDet:
 
-        face_boxes = face_det.extract_face(frame)
-        frame_face_emb = None
-        face_dist = 0
-
-        if np.any(face_boxes):
-            frame_face_data = face_det.get_face_embeddings(face_boxes, frame, debug)
-            frame_face_emb = frame_face_data[0]['embedding']
-
-            for face_emb in learned_faces:
-                distance = face_det.euclidean_distance(frame_face_emb, face_emb)
-
-                if distance < 1.1:
-                    frame_face_data[0]['distance'] = distance
-
-        return face_boxes, frame_face_emb, face_dist
-
-    def learn_new_face(self, face_emb, learned_faces):
-        print("Learning new face")
-        learned_faces.append(face_emb)
-
-    def run(self):
-
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--fid_m", type=str, required=True)
-        #parser.add_argument("--hd_m", type=str, required=True)
-        #parser.add_argument("--hd_thres", type=float, required=True)
-        parser.add_argument("--preview", type=bool, required=True)
-
-        args = parser.parse_args()
+    def __init__(self, face_det_model_path, preview):
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        model_path = os.path.join(dir_path, args.fid_m)
+        model_path = os.path.join(dir_path, face_det_model_path)
+
+        self.face_det = fm.FaceMatch(model_path)
+        self.preview = preview
+        self.learned_faces = []
+
+        #self.vs =  VideoStream(usePiCamera=True).start()
+        #self.vs = VideoStream(src=0)
+
+        self.last_seen_face = 0
+
+    def check_face(self, frame):
+
+        face_boxes = self.face_det.extract_face(frame)
+        frame_face_emb = None
+        face_dist = 0
+        known_face = False
+
+        if np.any(face_boxes):
+            frame_face_data = self.face_det.get_face_embeddings(face_boxes, frame)
+            frame_face_emb = frame_face_data[0]['embedding']
+
+            for face_emb in self.learned_faces:
+                face_dist = self.face_det.euclidean_distance(frame_face_emb, face_emb)
+
+                if face_dist < 1.1:
+                    known_face = True
+
+        return face_boxes, frame_face_emb, face_dist, known_face
+
+    def run_identification(self, sample_frames=1000):
 
         experiment_utils = experiment_functions.BlurExperiments
-        face_det = fm.FaceMatch(model_path)
-        #human_det = hd.DetectorAPI(path_to_ckpt = args.hd_m)
 
-        learned_faces = []
-
-        # vs = VideoStream(usePiCamera=True).start()
         vs = VideoStream(src=0).start()
         time.sleep(2.0)
         fps = FPS().start()
+        frames_count = 0
 
-        while True:
+        known_face_found = False
+        color = red_color
 
-            frame = vs.read()
-            frame = imutils.resize(frame, width=400)
-            (fH, fW) = frame.shape[:2]
-
-            f_boxes, frame_face_emb, face_dist = self.check_face(face_det, frame, learned_faces)
+        while frames_count < sample_frames:
 
             start = time.time()
 
-            if frame_face_emb is not None:
+            frame = vs.read()
+            #frame = imutils.resize(frame, width=400)
+            #(fH, fW) = frame.shape[:2]
 
-                if face_dist is not 0:
-                    print("Face found")
-                else:
-                    self.learn_new_face(frame_face_emb, learned_faces)
+            f_boxes, frame_face_emb, face_dist, known_face = self.check_face(frame)
 
-            if args.preview is True:
-                experiment_utils.show_detections(frame, [], f_boxes, 0, 0, 0.5)
+            if known_face:
+                known_face_found = True
+                color = green_color
+
+            if self.preview:
+                experiment_utils.show_detections(frame, [], f_boxes, color, 0, 0, 0.5)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
 
-            end = time.time()
-            print("Time to process frame time: {}".format(end - start))
+            frames_count = frames_count + 1
 
+            end = time.time()
+            print("Time to process frame: {}".format(end - start))
             fps.update()
 
         fps.stop()
@@ -94,11 +92,52 @@ class Peyes:
         cv.destroyAllWindows()
         vs.stop()
 
+        return known_face_found
 
-        #boxes, scores, classes, humans_detected_map, num = human_det.process_frame(frame, args.hd_thres, 1)
-        #h_boxes, h_scores = human_det.get_detected_persons(boxes, scores, classes, hd_threshold)
+    def run_learn_face(self, sample_frames=1000):
 
+        experiment_utils = experiment_functions.BlurExperiments
 
-if __name__ == "__main__":
-    peyes = Peyes()
-    peyes.run()
+        vs = VideoStream(src=0).start()
+        time.sleep(2.0)
+        fps = FPS().start()
+        frames_count = 0
+
+        learn_success = False
+        color = red_color
+
+        while frames_count < sample_frames:
+
+            start = time.time()
+
+            frame = vs.read()
+            # frame = imutils.resize(frame, width=400)
+            # (fH, fW) = frame.shape[:2]
+
+            f_boxes, frame_face_emb, face_dist, known_face = self.check_face(frame)
+
+            if frame_face_emb is not None and not known_face:
+                self.learned_faces.append(frame_face_emb)
+                learn_success = True
+                color = blue_color
+
+            if self.preview:
+                experiment_utils.show_detections(frame, [], f_boxes, color, 0, 0, 0.5)
+                key = cv.waitKey(1)
+                if key & 0xFF == ord('q'):
+                    break
+
+            frames_count = frames_count + 1
+
+            end = time.time()
+            print("Time to process frame and add new face: {}".format(end - start))
+            fps.update()
+
+        fps.stop()
+        print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
+        print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+
+        cv.destroyAllWindows()
+        vs.stop()
+
+        return learn_success

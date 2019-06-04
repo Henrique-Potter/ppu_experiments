@@ -9,13 +9,13 @@ class BlurExperiments:
         self.human_det = hd_model
 
     @staticmethod
-    def show_detections(img_cp, h_boxes, f_boxes, scores, classes, threshold):
+    def show_detections(img_cp, h_boxes, f_boxes, color, scores, classes, threshold):
 
         #img_cp = img_dbg.copy()
 
         for f_box in f_boxes:
 
-            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (255, 0, 0), 2)
+            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
             cv.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
         for i in range(len(h_boxes)):

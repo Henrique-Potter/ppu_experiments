@@ -2,7 +2,6 @@ import numpy as np
 
 from face_detection import detect_face
 import cv2
-import matplotlib.pyplot as plt
 
 
 class FaceMatch:
