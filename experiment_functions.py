@@ -9,9 +9,9 @@ class BlurExperiments:
         self.human_det = hd_model
 
     @staticmethod
-    def show_detections(img_dbg, h_boxes, f_boxes, scores, classes, threshold):
+    def show_detections(img_cp, h_boxes, f_boxes, scores, classes, threshold):
 
-        img_cp = img_dbg.copy()
+        #img_cp = img_dbg.copy()
 
         for f_box in f_boxes:
 
