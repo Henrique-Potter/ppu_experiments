@@ -14,7 +14,7 @@ red_color = (0, 0, 255)
 
 class PiFaceDet:
 
-    def __init__(self, face_det_model_path='face_id_models\\20170512-110547.pb', preview=True):
+    def __init__(self, face_det_model_path='face_id_models/20170512-110547.pb', preview=False):
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
         model_path = os.path.join(dir_path, face_det_model_path)
@@ -51,7 +51,7 @@ class PiFaceDet:
 
         experiment_utils = experiment_functions.BlurExperiments
 
-        vs = VideoStream(src=0).start()
+        vs = VideoStream(usePiCamera=True).start()
         time.sleep(2.0)
         fps = FPS().start()
         frames_count = 0
@@ -62,7 +62,6 @@ class PiFaceDet:
         while frames_count < sample_frames:
 
             start = time.time()
-
             frame = vs.read()
             #frame = imutils.resize(frame, width=400)
             #(fH, fW) = frame.shape[:2]
@@ -74,7 +73,7 @@ class PiFaceDet:
                 color = green_color
 
             if self.preview:
-                experiment_utils.show_detections(frame, [], f_boxes, color, 0, 0, 0.5)
+                self.show_detections(frame, f_boxes, color)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
@@ -99,7 +98,7 @@ class PiFaceDet:
 
         experiment_utils = experiment_functions.BlurExperiments
 
-        vs = VideoStream(src=0).start()
+        vs = VideoStream(usePiCamera=True).start()
         time.sleep(2.0)
         fps = FPS().start()
         frames_count = 0
@@ -123,7 +122,7 @@ class PiFaceDet:
                 color = blue_color
 
             if self.preview:
-                experiment_utils.show_detections(frame, [], f_boxes, color, 0, 0, 0.5)
+                self.show_detections(frame, f_boxes, color)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
@@ -143,3 +142,16 @@ class PiFaceDet:
         time.sleep(2.0)
 
         return learn_success
+    
+    @staticmethod
+    def show_detections(img_cp, f_boxes, color):
+
+        #img_cp = img_dbg.copy()
+
+        for f_box in f_boxes:
+
+            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
+            cv.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+
+
+        cv.imshow("Debugging", img_cp)
