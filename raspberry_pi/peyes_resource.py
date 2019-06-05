@@ -1,6 +1,11 @@
 from coapthon.resources.resource import Resource
 from pi_face_detection import PiFaceDet
 
+face_detection = PiFaceDet()
+from threading import Lock
+
+peyes_lock = Lock()
+
 
 class Peyes(Resource):
 
@@ -8,28 +13,21 @@ class Peyes(Resource):
         super(Peyes, self).__init__(name, coap_server, visible=True,
                                             observable=True, allow_children=True)
 
-        self.face_detection = PiFaceDet()
         self.payload = "Peyes"
+        self.max_age = 60
 
     def render_GET(self, request):
 
         self.payload = "Failure"
 
-        if request.uri_query == 'identify':
-            found_face = self.face_detection.run_identification(50)
+        peyes_lock.acquire()
+        found_face = face_detection.run_identification(50)
+        peyes_lock.release()
 
-            if found_face:
-                self.payload = "True"
-            else:
-                self.payload = "False"
-
-        if request.uri_query == 'learn_face':
-            learn_face_status = self.face_detection.run_learn_face(50)
-
-            if learn_face_status:
-                self.payload = "True"
-            else:
-                self.payload = "False"
+        if found_face:
+            self.payload = "True"
+        else:
+            self.payload = "False"
 
         return self
 
@@ -41,9 +39,20 @@ class Peyes(Resource):
         return self
 
     def render_POST(self, request):
+
         res = Peyes()
-        res.location_query = request.uri_query
-        res.payload = request.payload
+
+        res.payload = "Failure"
+
+        peyes_lock.acquire()
+        learn_face_status = face_detection.run_learn_face(50)
+        peyes_lock.release()
+
+        if learn_face_status:
+            res.payload = "True"
+        else:
+            res.payload = "False"
+
         return res
 
     def render_DELETE(self, request):

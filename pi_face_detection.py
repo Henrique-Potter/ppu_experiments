@@ -91,6 +91,7 @@ class PiFaceDet:
 
         cv.destroyAllWindows()
         vs.stop()
+        time.sleep(2.0)
 
         return known_face_found
 
@@ -139,5 +140,6 @@ class PiFaceDet:
 
         cv.destroyAllWindows()
         vs.stop()
+        time.sleep(2.0)
 
         return learn_success
