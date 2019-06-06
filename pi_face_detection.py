@@ -235,6 +235,7 @@ class PiFaceDet:
 
         cv.imshow("Debugging", img_cp)
 
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
