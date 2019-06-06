@@ -46,7 +46,9 @@ class Peyes(Resource):
 
         peyes_lock.acquire()
         print("get lock in")
-        found_face = face_detection.run_identification(5)
+        self.beep(1, 0.2)
+        found_face = face_detection.run_identification(2)
+        self.beep(1, 0.2)
         print("Face identified:{}".format(found_face))
         
         peyes_lock.release()
@@ -78,7 +80,9 @@ class Peyes(Resource):
         
         peyes_lock.acquire()
         print("post lock in")
-        learn_face_status = face_detection.run_learn_face(5)
+        self.beep(4, 0.2)
+        learn_face_status = face_detection.run_learn_face(2)
+        self.beep(4, 0.2)
         peyes_lock.release()
         print("Face learned:{}".format(learn_face_status))
         print("post lock out")
