@@ -15,13 +15,15 @@ g_led_pin = 36
 r_led_pin = 38
 
 GPIO.setup(beep_pin, GPIO.OUT, initial=0)
-GPIO.setup(g_led_pin, GPIO.OUT, initial=0)
-GPIO.setup(r_led_pin, GPIO.OUT, initial=0)
+GPIO.setup(g_led_pin, GPIO.OUT, initial=1)
+GPIO.setup(r_led_pin, GPIO.OUT, initial=1)
 
 peyes_lock = Lock()
 
-print("\n\n----------Tensorflow wam-up----------\n\n")
+print("\n\n----------Tensorflow Loading----------\n\n")
 face_detection = PiFaceDet()
+print("\n----------Tensorflow Loading complete----------\n")
+print("\n\n----------Tensorflow wam-up----------\n\n")
 found_face = face_detection.run_identification(1)
 print("\n\n----------Tensorflow wam-up complete----------\n\n")
 
@@ -34,6 +36,8 @@ class Peyes(Resource):
 
         self.payload = "Peyes"
         self.max_age = 60
+        self.red_blink(1, 0.5)
+        self.green_blink(1, 0.5)
         self.beep(1, 0.2)
 
     def render_GET(self, request):
