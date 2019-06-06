@@ -2,10 +2,10 @@ from coapthon.server.coap import CoAP
 from peyes_resource import Peyes
 import RPi.GPIO as GPIO
 
+
 class CoAPServer(CoAP):
     def __init__(self, host, port):
         CoAP.__init__(self, (host, port))
-
         self.add_resource('peyes/', Peyes())
 
 

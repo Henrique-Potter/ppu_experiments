@@ -17,6 +17,7 @@ print("\n\n----------Tensorflow wam-up----------\n\n")
 found_face = face_detection.run_identification(1)
 print("\n\n----------Tensorflow wam-up complete----------\n\n")
 
+
 class Peyes(Resource):
 
     def __init__(self, name="Peyes", coap_server=None):
@@ -25,8 +26,7 @@ class Peyes(Resource):
 
         self.payload = "Peyes"
         self.max_age = 60
-        self.beep(1,0.2)
-        
+        self.beep(1, 0.2)
 
     def render_GET(self, request):
 
@@ -87,5 +87,4 @@ class Peyes(Resource):
             time.sleep(duration)
             GPIO.output(mypin, GPIO.LOW)
             time.sleep(duration)
-                
-            
+
