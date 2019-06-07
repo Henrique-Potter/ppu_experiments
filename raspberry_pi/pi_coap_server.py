@@ -25,7 +25,7 @@ def main():
         print("Server Shutdown")
         server.close()
         print("Exiting...")
-        if platform.uname()[1] is 'raspberrypi':
+        if platform.uname()[1] =='raspberrypi':
             import RPi.GPIO as GPIO
             GPIO.cleanup()
 

@@ -1,6 +1,6 @@
 from coapthon.client.helperclient import HelperClient
 
-host = "192.168.0.177"
+host = "192.168.0.141"
 port = 5683
 path_identify ="peyes"
 path_learn ="peyes"

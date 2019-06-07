@@ -15,7 +15,7 @@ red_color = (0, 0, 255)
 
 use_raspiberry = False
 
-if platform.uname()[1] is 'raspberrypi':
+if platform.uname()[1] == 'raspberrypi':
     import RPi.GPIO as GPIO
     GPIO.setmode(GPIO.BOARD)
 
@@ -189,7 +189,7 @@ class PiFaceDet:
 
     @staticmethod
     def beep(beep_times, duration=0.1):
-        if platform.uname()[1] is 'raspberrypi':
+        if platform.uname()[1] == 'raspberrypi':
             for i in range(beep_times):
                 GPIO.output(beep_pin, GPIO.HIGH)
                 time.sleep(duration)
@@ -198,7 +198,7 @@ class PiFaceDet:
 
     @staticmethod
     def red_blink(blink_times, duration=0.3):
-        if platform.uname()[1] is 'raspberrypi':
+        if platform.uname()[1] == 'raspberrypi':
             for i in range(blink_times):
                 GPIO.output(r_led_pin, GPIO.HIGH)
                 time.sleep(duration)
@@ -207,7 +207,7 @@ class PiFaceDet:
 
     @staticmethod
     def green_blink(blink_times, duration=0.3):
-        if platform.uname()[1] is 'raspberrypi':
+        if platform.uname()[1] == 'raspberrypi':
             for i in range(blink_times):
                 GPIO.output(g_led_pin, GPIO.HIGH)
                 time.sleep(duration)
