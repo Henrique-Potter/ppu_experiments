@@ -1,4 +1,4 @@
-from pi_face_detection import PiFaceDet
+from pi_nc_face_detection import PiFaceDet
 import argparse
 
 if __name__ == "__main__":

@@ -2,10 +2,11 @@ import sys
 sys.path.append("..")
 
 from coapthon.resources.resource import Resource
-from pi_face_detection import PiFaceDet
+from pi_nc_face_detection import PiFaceDet
 import RPi.GPIO as GPIO
 from threading import Lock
 import time
+import platform
 
 
 GPIO.setmode(GPIO.BOARD)
@@ -28,10 +29,10 @@ found_face = face_detection.run_identification(1)
 print("\n\n----------Tensorflow wam-up complete----------\n\n")
 
 
-class Peyes(Resource):
+class PeyesNC(Resource):
 
     def __init__(self, name="Peyes", coap_server=None):
-        super(Peyes, self).__init__(name, coap_server, visible=True,
+        super(PeyesNC, self).__init__(name, coap_server, visible=True,
                                             observable=True, allow_children=True)
 
         self.payload = "Peyes"
@@ -46,10 +47,10 @@ class Peyes(Resource):
 
         peyes_lock.acquire()
         print("get lock in")
-        self.beep(1, 0.2)
+        self.beep(1, 0.3)
         found_face = face_detection.run_identification(2)
-        self.beep(1, 0.2)
-        print("Face identified:{}".format(found_face))
+        self.beep(1, 0.3)
+        print("Face identified: {}".format(found_face))
         
         peyes_lock.release()
         print("get lock out")
@@ -74,7 +75,7 @@ class Peyes(Resource):
 
     def render_POST(self, request):
         
-        res = Peyes()
+        res = PeyesC()
         
         res.payload = "Failure"
         
@@ -93,6 +94,7 @@ class Peyes(Resource):
             self.beep(3)
         else:
             res.payload = "False"
+            self.beep(1, 1)
         
         return res
 
