@@ -15,17 +15,17 @@ red_color = (0, 0, 255)
 
 use_raspiberry = False
 
+beep_pin = 40
+g_led_pin = 36
+r_led_pin = 38
+
 if platform.uname()[1] == 'raspberrypi':
     import RPi.GPIO as GPIO
     GPIO.setmode(GPIO.BOARD)
 
-    beep_pin = 40
-    g_led_pin = 36
-    r_led_pin = 38
-
     GPIO.setup(beep_pin, GPIO.OUT, initial=0)
-    GPIO.setup(g_led_pin, GPIO.OUT, initial=1)
-    GPIO.setup(r_led_pin, GPIO.OUT, initial=1)
+    GPIO.setup(g_led_pin, GPIO.OUT, initial=0)
+    GPIO.setup(r_led_pin, GPIO.OUT, initial=0)
 
     use_raspiberry = True
 
@@ -47,8 +47,7 @@ class PiFaceDet:
 
         self.face_det = fm.FaceMatch(model_path)
         self.preview = preview
-        self.last_seen_face = 0
-        self.learn_face = False
+        self.face_counter = 0
 
     def run_identification(self, sample_frames=1000):
 
@@ -95,24 +94,24 @@ class PiFaceDet:
             face_found, faces_boxes = self.detect_face(frame)
 
             if face_found and learn_face_count.empty():
+                self.beep_blink(1, g_led_pin, 0.1)
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
                 frame_face_emb = frame_face_data[0]['embedding']
                 most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
 
                 if most_similar_name:
-                    print("Found {}".format(most_similar_name))
-                    self.beep(2, 0.3)
-                    self.green_blink(1, 2)
+                    print("Authorization confirmed".format(most_similar_name))
+                    self.beep_blink(2, g_led_pin, 0.3)
                 else:
-                    print("Alert user no authorized")
-                    self.beep(1, 1)
-                    self.red_blink(1, 2)
+                    print("Alert! User not authorized detected")
+                    self.beep_blink(1, r_led_pin, 1.5)
 
-            if not learn_face_count.empty() and face_found:
-                self.learn_new_face(faces_boxes, frame)
+            if face_found and not learn_face_count.empty():
+                most_similar_name = self.learn_new_face(faces_boxes, frame)
+                print("New face: {} was learned.".format(most_similar_name))
+
                 learn_face_count.get()
-                self.beep(4, 0.3)
-                self.green_blink(4)
+                self.beep_blink(4, g_led_pin, 0.3)
 
             if self.preview:
                 self.show_detections(frame, faces_boxes, color)
@@ -123,7 +122,7 @@ class PiFaceDet:
             frames_count = frames_count + 1
 
             end = time.time()
-            print("Time to process frame and add new face: {}".format(end - start))
+            print("Time to process frame: {}".format(end - start))
             fps.update()
 
         fps.stop()
@@ -175,17 +174,16 @@ class PiFaceDet:
     def learn_new_face(self, faces_boxes, frame):
         frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
         frame_face_emb = frame_face_data[0]['embedding']
-        most_similar_face = self.find_face(frame_face_emb)
-        new_face_emb = None
-        if most_similar_face is None:
-            new_face_emb = frame_face_emb
+        most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
+        if most_similar_name is None:
             face = {'embedding': frame_face_emb}
-            self.last_seen_face = self.last_seen_face + 1
-            self.faces_db['new_face {}'.format(self.last_seen_face)] = face
+            self.face_counter = self.face_counter + 1
+            most_similar_name = 'face {}'.format(self.face_counter)
+            self.faces_db[most_similar_name] = face
             with open(self.faces_db_file, 'w') as outfile:
                 json.dump(self.faces_db, outfile, sort_keys=True, indent=4, cls=NumpyEncoder)
 
-        return new_face_emb
+        return most_similar_name
 
     @staticmethod
     def beep(beep_times, duration=0.1):
@@ -212,6 +210,17 @@ class PiFaceDet:
                 GPIO.output(g_led_pin, GPIO.HIGH)
                 time.sleep(duration)
                 GPIO.output(g_led_pin, GPIO.LOW)
+                time.sleep(duration)
+
+    @staticmethod
+    def beep_blink(blink_times, led_pin, duration=0.3):
+        if platform.uname()[1] == 'raspberrypi':
+            for i in range(blink_times):
+                GPIO.output(beep_pin, GPIO.HIGH)
+                GPIO.output(led_pin, GPIO.HIGH)
+                time.sleep(duration)
+                GPIO.output(beep_pin, GPIO.HIGH)
+                GPIO.output(led_pin, GPIO.LOW)
                 time.sleep(duration)
 
     @staticmethod

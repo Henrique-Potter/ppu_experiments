@@ -13,6 +13,9 @@ peyes_lock = Lock()
 inputQueue = Queue(maxsize=3)
 
 
+continuous_server = True
+
+
 def start_face_det(learn_face_count):
 
     f = PiFaceDet()
@@ -31,9 +34,13 @@ class PeyesC(Resource):
     def render_GET(self, request):
         print("[INFO] starting process...")
 
-        p = Process(target=start_face_det, args=(inputQueue,))
-        p.daemon = True
-        p.start()
+        global continuous_server
+
+        if continuous_server:
+            p = Process(target=start_face_det, args=(inputQueue,))
+            p.daemon = True
+            p.start()
+            continuous_server = False
 
         self.payload = "Success"
 
