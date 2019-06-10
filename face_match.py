@@ -95,7 +95,7 @@ class FaceMatch:
         elif self.distance_model == 'cosine':
             return self.compare_faces_cd(img1, img2, debug_faces)
 
-    # Calculates distance based in Euclidian Distance
+    # Calculates distance based in Euclidean Distance
     def compare_faces_ed(self, img1, img2, debug_faces):
         boxes1 = self.extract_face(img1)
         face1 = self.get_face_embeddings(boxes1, img1, debug_faces)
@@ -136,6 +136,11 @@ class FaceMatch:
     def euclidean_distance(face1, face2):
         dist = np.sqrt(np.sum(np.square(np.subtract(face1, face2))))
         return dist
+
+    @staticmethod
+    def euclidean_distance_vec(face1, face2):
+        distances = np.sqrt(np.sum(np.square(np.subtract(face1, face2)), axis=1))
+        return distances
 
     @staticmethod
     def cosine_similarity(x, y):

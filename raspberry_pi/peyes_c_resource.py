@@ -6,7 +6,6 @@ from multiprocessing import Process
 from pi_c_face_detection import PiFaceDet
 from threading import Lock
 
-
 peyes_lock = Lock()
 inputQueue = Queue(maxsize=3)
 
@@ -25,7 +24,7 @@ class PeyesC(Resource):
         super(PeyesC, self).__init__(name, coap_server, visible=True,
                                             observable=True, allow_children=True)
 
-        self.payload = "Peyes Continous Id"
+        self.payload = "Peyes Continous Identification"
         self.max_age = 60
 
     def render_GET(self, request):
@@ -38,8 +37,9 @@ class PeyesC(Resource):
             p.daemon = True
             p.start()
             continuous_server = False
-
-        self.payload = "Success"
+            self.payload = "Success"
+        else:
+            self.payload = "Continuous ID is already ON"
 
         return self
 

@@ -43,7 +43,7 @@ class PiFaceDet:
             with open(self.faces_db_file) as json_file:
                 self.faces_db = json.load(json_file)
         else:
-            self.faces_db = {}
+            self.faces_db = {'face_count': 0, 'faces': {}}
 
         self.face_det = fm.FaceMatch(model_path)
         self.preview = preview
@@ -92,7 +92,7 @@ class PiFaceDet:
 
             start = time.time()
             face_found, faces_boxes = self.detect_face(frame)
-            print("Time to extract face: {}".format(time.time() - start))
+            print("Time to detect face: {}".format(time.time() - start))
 
             if face_found and learn_face_count.empty():
                 self.beep_blink(1, g_led_pin, 0.1)
@@ -104,7 +104,7 @@ class PiFaceDet:
                 frame_face_emb = frame_face_data[0]['embedding']
 
                 start = time.time()
-                most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
+                most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
                 print("Time to find face in DB: {}".format(time.time() - start))
 
                 if most_similar_name:
@@ -117,13 +117,16 @@ class PiFaceDet:
             if face_found and not learn_face_count.empty():
 
                 start = time.time()
-                most_similar_name = self.learn_new_face(faces_boxes, frame)
+                most_similar_name, state_changed = self.learn_new_face(faces_boxes, frame)
                 print("Time to learn face: {}".format(time.time() - start))
 
                 print("New face: {} was learned.".format(most_similar_name))
 
                 learn_face_count.get()
                 self.beep_blink(4, g_led_pin, 0.3)
+
+                if state_changed:
+                    self.save_db_state()
 
             if self.preview:
                 self.show_detections(frame, faces_boxes, color)
@@ -152,7 +155,7 @@ class PiFaceDet:
         if np.any(face_boxes):
             frame_face_data = self.face_det.get_face_embeddings(face_boxes, frame)
             frame_face_emb = frame_face_data[0]['embedding']
-            most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
+            most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
 
         return face_boxes, most_similar_emb
 
@@ -164,35 +167,58 @@ class PiFaceDet:
 
     def find_face(self, frame_face_emb):
 
-        most_similar_emb = None
+        face_embs = None
         most_similar_name = None
-        dist_place_holder = 1.1
+        best_matches = 0
+        match_map = None
 
         if self.faces_db:
-            for name, face_data in self.faces_db.items():
+            for name, face_data in self.faces_db['faces'].items():
                 f_emb = np.asarray(face_data['embedding'])
-                face_dist = self.face_det.euclidean_distance(frame_face_emb, f_emb)
 
-                if face_dist <= dist_place_holder:
-                    dist_place_holder = face_dist
-                    most_similar_emb = face_data
+                face_distances = self.face_det.euclidean_distance_vec(frame_face_emb, f_emb)
+                match_map = face_distances <= 1.1
+                matches = np.sum(match_map)
+                if matches > best_matches:
+                    best_matches = matches
+                    face_embs = face_data
                     most_similar_name = name
 
-        return most_similar_name, most_similar_emb
+        return most_similar_name, face_embs, match_map
 
     def learn_new_face(self, faces_boxes, frame):
+        state_changed = False
+
         frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
         frame_face_emb = frame_face_data[0]['embedding']
-        most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
+        most_similar_name, face_embs, match_map = self.find_face(frame_face_emb)
         if most_similar_name is None:
-            face = {'embedding': frame_face_emb}
-            self.face_counter = self.face_counter + 1
-            most_similar_name = 'face {}'.format(self.face_counter)
-            self.faces_db[most_similar_name] = face
-            with open(self.faces_db_file, 'w') as outfile:
-                json.dump(self.faces_db, outfile, sort_keys=True, indent=4, cls=NumpyEncoder)
 
-        return most_similar_name
+            # Broadcast the sum of 5 to force unrecognizable faces at the start
+            faces = np.zeros([5, 128], dtype=np.float) + 5
+            faces[0] = frame_face_emb[0]
+            face = {'embedding': faces}
+            self.face_counter = self.face_counter + 1
+            self.faces_db['face_count'] += 1
+            most_similar_name = 'face {}'.format(self.faces_db['face_count'])
+            self.faces_db['faces'][most_similar_name] = face
+            state_changed = True
+
+        elif most_similar_name and np.sum(match_map) < 5:
+
+            free_face_slot_index = np.where(np.invert(match_map))
+            index = free_face_slot_index[0][0]
+            face_embs['embedding'][index] = frame_face_emb[0]
+            self.faces_db['faces'][most_similar_name] = face_embs
+            state_changed = True
+
+        return most_similar_name, state_changed
+
+    def save_db_state(self):
+        start = time.time()
+        with open(self.faces_db_file, 'w') as outfile:
+            json.dump(self.faces_db, outfile, sort_keys=True, indent=4, cls=NumpyEncoder)
+        print("Time to dump json file: {}".format(time.time() - start))
 
     @staticmethod
     def beep(beep_times, duration=0.1):
@@ -247,8 +273,10 @@ class PiFaceDet:
 
         cv.imshow("Debugging", img_cp)
 
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
+        return json.JSONEncoder.default(obj)
+
