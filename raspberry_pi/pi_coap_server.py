@@ -2,7 +2,7 @@ from multiprocessing import Process
 
 from coapthon.server.coap import CoAP
 #from raspberry_pi.peyes_nc_resource import PeyesNC
-from raspberry_pi.peyes_c_resource import PeyesC
+from peyes_c_resource import PeyesC
 import platform
 
 
@@ -16,7 +16,7 @@ class CoAPServer(CoAP):
 
 def main():
 
-    server = CoAPServer("192.168.0.177", 5683)
+    server = CoAPServer("192.168.0.141", 5683)
     try:
         print("Server Started at {}".format(server.server_address))
         server.listen(30)

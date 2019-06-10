@@ -219,7 +219,7 @@ class PiFaceDet:
                 GPIO.output(beep_pin, GPIO.HIGH)
                 GPIO.output(led_pin, GPIO.HIGH)
                 time.sleep(duration)
-                GPIO.output(beep_pin, GPIO.HIGH)
+                GPIO.output(beep_pin, GPIO.LOW)
                 GPIO.output(led_pin, GPIO.LOW)
                 time.sleep(duration)
 
