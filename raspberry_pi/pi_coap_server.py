@@ -1,9 +1,10 @@
-from multiprocessing import Process
-
 from coapthon.server.coap import CoAP
 #from raspberry_pi.peyes_nc_resource import PeyesNC
-from peyes_c_resource import PeyesC
 import platform
+if platform.uname()[1] =='raspberrypi':
+    from peyes_c_resource import PeyesC
+else:
+    from raspberry_pi.peyes_c_resource import PeyesC
 
 
 class CoAPServer(CoAP):

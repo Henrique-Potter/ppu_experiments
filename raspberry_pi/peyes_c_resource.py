@@ -1,8 +1,6 @@
 import sys
 from multiprocessing import Queue
-
 sys.path.append("..")
-
 from coapthon.resources.resource import Resource
 from multiprocessing import Process
 from pi_c_face_detection import PiFaceDet
@@ -11,7 +9,6 @@ from threading import Lock
 
 peyes_lock = Lock()
 inputQueue = Queue(maxsize=3)
-
 
 continuous_server = True
 

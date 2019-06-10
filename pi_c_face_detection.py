@@ -83,21 +83,29 @@ class PiFaceDet:
         vs = self.get_cam()
         time.sleep(2.0)
         fps = FPS().start()
-        frames_count = 0
 
         color = blue_color
 
         while True:
 
-            start = time.time()
             frame = vs.read()
+
+            start = time.time()
             face_found, faces_boxes = self.detect_face(frame)
+            print("Time to extract face: {}".format(time.time() - start))
 
             if face_found and learn_face_count.empty():
                 self.beep_blink(1, g_led_pin, 0.1)
+
+                start = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
+                print("Time to extract embeddings: {}".format(time.time() - start))
+
                 frame_face_emb = frame_face_data[0]['embedding']
+
+                start = time.time()
                 most_similar_name, most_similar_emb = self.find_face(frame_face_emb)
+                print("Time to find face in DB: {}".format(time.time() - start))
 
                 if most_similar_name:
                     print("Authorization confirmed".format(most_similar_name))
@@ -107,7 +115,11 @@ class PiFaceDet:
                     self.beep_blink(1, r_led_pin, 1.5)
 
             if face_found and not learn_face_count.empty():
+
+                start = time.time()
                 most_similar_name = self.learn_new_face(faces_boxes, frame)
+                print("Time to learn face: {}".format(time.time() - start))
+
                 print("New face: {} was learned.".format(most_similar_name))
 
                 learn_face_count.get()
@@ -119,10 +131,7 @@ class PiFaceDet:
                 if key & 0xFF == ord('q'):
                     break
 
-            frames_count = frames_count + 1
-
-            end = time.time()
-            print("Time to process frame: {}".format(end - start))
+            print("Time to process frame: {}".format(time.time() - start))
             fps.update()
 
         fps.stop()
