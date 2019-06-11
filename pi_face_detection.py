@@ -180,7 +180,7 @@ class PiFaceDet:
                 print("Time to find face in DB: {}".format(time.time() - start3))
 
                 if most_similar_name:
-                    print("Authorization confirmed".format(most_similar_name))
+                    print("Authorization for {} confirmed".format(most_similar_name))
                     self.beep_blink(2, g_led_pin, 0.3)
                 else:
                     print("Alert! User not authorized detected")
@@ -217,20 +217,6 @@ class PiFaceDet:
         vs.stop()
         time.sleep(2.0)
 
-    # def check_face(self, frame):
-    #
-    #     face_boxes = self.face_det.extract_face(frame)
-    #     frame_face_emb = None
-    #     most_similar_emb = None
-    #     most_similar_name = None
-    #
-    #     if np.any(face_boxes):
-    #         frame_face_data = self.face_det.get_face_embeddings(face_boxes, frame)
-    #         frame_face_emb = frame_face_data[0]['embedding']
-    #         most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-    #
-    #     return face_boxes, most_similar_emb
-
     def detect_face(self, frame):
         face_boxes = self.face_det.extract_face(frame)
         faces_found = np.any(face_boxes)
@@ -242,7 +228,7 @@ class PiFaceDet:
         face_embs = None
         most_similar_name = None
         best_matches = 0
-        match_map = None
+        best_match_map = None
 
         if self.faces_db:
             for name, face_data in self.faces_db['faces'].items():
@@ -255,8 +241,9 @@ class PiFaceDet:
                     best_matches = matches
                     face_embs = face_data
                     most_similar_name = name
+                    best_match_map = match_map
 
-        return most_similar_name, face_embs, match_map
+        return most_similar_name, face_embs, best_match_map
 
     def learn_new_face(self, faces_boxes, frame):
         new_embs_added = False

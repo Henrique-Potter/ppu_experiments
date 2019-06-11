@@ -11,8 +11,6 @@ class BlurExperiments:
     @staticmethod
     def show_detections(img_cp, h_boxes, f_boxes, color, scores, classes, threshold):
 
-        #img_cp = img_dbg.copy()
-
         for f_box in f_boxes:
 
             cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
