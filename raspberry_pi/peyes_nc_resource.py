@@ -4,7 +4,7 @@ sys.path.append("..")
 from coapthon.resources.resource import Resource
 from pi_face_detection import PiFaceDet
 from threading import Lock
-
+import time
 
 peyes_lock = Lock()
 
@@ -26,13 +26,15 @@ class PeyesTrigger(Resource):
         self.max_age = 60
 
     def render_GET(self, request):
+        start1 = time.time()
 
         peyes_lock.acquire()
-        found_face = face_detection.id_face_trigger()
+
+        found_face = face_detection.id_face_trigger(1)
         peyes_lock.release()
 
         self.payload = found_face
-
+        time.time() - start1
         return self
 
     def render_GET_advanced(self, request, response):
