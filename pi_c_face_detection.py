@@ -116,6 +116,7 @@ class PiFaceDet:
 
             if face_found and not learn_face_count.empty():
 
+                self.beep_blink(8, g_led_pin, 0.1)
                 start = time.time()
                 most_similar_name, state_changed = self.learn_new_face(faces_boxes, frame)
                 print("Time to learn face: {}".format(time.time() - start))
@@ -169,7 +170,7 @@ class PiFaceDet:
 
         face_embs = None
         most_similar_name = None
-        best_matches = 0
+        best_matches = 2
         match_map = None
 
         if self.faces_db:
