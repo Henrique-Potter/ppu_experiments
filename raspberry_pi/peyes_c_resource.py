@@ -3,17 +3,16 @@ from multiprocessing import Queue
 sys.path.append("..")
 from coapthon.resources.resource import Resource
 from multiprocessing import Process
-from pi_c_face_detection import PiFaceDet
+from pi_face_detection import PiFaceDet
 from threading import Lock
 
 peyes_lock = Lock()
 inputQueue = Queue(maxsize=3)
 
-continuous_server = True
+continuous_server = False
 
 
 def start_face_det(learn_face_count):
-
     f = PiFaceDet()
     f.continuous_face_identification(learn_face_count)
 
@@ -32,14 +31,14 @@ class PeyesC(Resource):
 
         global continuous_server
 
-        if continuous_server:
+        if not continuous_server:
             p = Process(target=start_face_det, args=(inputQueue,))
             p.daemon = True
             p.start()
-            continuous_server = False
-            self.payload = "Success"
+            continuous_server = True
+            self.payload = "ID process started Successfully!"
         else:
-            self.payload = "Continuous ID is already ON"
+            self.payload = "Continuous ID process is already ON!"
 
         return self
 
@@ -54,10 +53,16 @@ class PeyesC(Resource):
         
         res = PeyesC()
 
-        inputQueue.put(True)
-        inputQueue.put(True)
-        inputQueue.put(True)
-        
+        if continuous_server:
+            inputQueue.put(True)
+            inputQueue.put(True)
+            inputQueue.put(True)
+            inputQueue.put(True)
+            inputQueue.put(True)
+            res.payload = 'Request sent successfully'
+        else:
+            res.payload = 'ID server is not running'
+
         return res
 
     def render_DELETE(self, request):

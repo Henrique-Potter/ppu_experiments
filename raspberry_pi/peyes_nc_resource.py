@@ -2,67 +2,36 @@ import sys
 sys.path.append("..")
 
 from coapthon.resources.resource import Resource
-from pi_nc_face_detection import PiFaceDet
-import RPi.GPIO as GPIO
+from pi_face_detection import PiFaceDet
 from threading import Lock
-import time
-import platform
 
-
-GPIO.setmode(GPIO.BOARD)
-
-beep_pin = 40
-g_led_pin = 36
-r_led_pin = 38
-
-GPIO.setup(beep_pin, GPIO.OUT, initial=0)
-GPIO.setup(g_led_pin, GPIO.OUT, initial=1)
-GPIO.setup(r_led_pin, GPIO.OUT, initial=1)
 
 peyes_lock = Lock()
+
 
 print("\n\n----------Tensorflow Loading----------\n\n")
 face_detection = PiFaceDet()
 print("\n----------Tensorflow Loading complete----------\n")
 print("\n\n----------Tensorflow wam-up----------\n\n")
-found_face = face_detection.run_identification(1)
+face_detection.id_face_trigger(1)
 print("\n\n----------Tensorflow wam-up complete----------\n\n")
 
 
-class PeyesNC(Resource):
+class PeyesTrigger(Resource):
 
     def __init__(self, name="Peyes", coap_server=None):
-        super(PeyesNC, self).__init__(name, coap_server, visible=True,
-                                            observable=True, allow_children=True)
-
-        self.payload = "Peyes"
+        super(PeyesTrigger, self).__init__(name, coap_server, visible=True,
+                                     observable=True, allow_children=True)
+        self.payload = "Peyes Trigger ID"
         self.max_age = 60
-        self.red_blink(1, 0.5)
-        self.green_blink(1, 0.5)
-        self.beep(1, 0.2)
 
     def render_GET(self, request):
 
-        self.payload = "Failure"
-
         peyes_lock.acquire()
-        print("get lock in")
-        self.beep(1, 0.3)
-        found_face = face_detection.run_identification(2)
-        self.beep(1, 0.3)
-        print("Face identified: {}".format(found_face))
-        
+        found_face = face_detection.id_face_trigger()
         peyes_lock.release()
-        print("get lock out")
 
-        if found_face:
-            self.payload = "True"
-            self.green_blink(1, 2)
-            self.beep(2)
-        else:
-            self.payload = "False"
-            self.red_blink(1, 2)
-            self.beep(1)
+        self.payload = found_face
 
         return self
 
@@ -74,53 +43,15 @@ class PeyesNC(Resource):
         return self
 
     def render_POST(self, request):
-        
-        res = PeyesC()
-        
-        res.payload = "Failure"
-        
+
         peyes_lock.acquire()
-        print("post lock in")
-        self.beep(4, 0.2)
-        learn_face_status = face_detection.run_learn_face(2)
-        self.beep(4, 0.2)
+        found_face = face_detection.learn_face_trigger()
         peyes_lock.release()
-        print("Face learned:{}".format(learn_face_status))
-        print("post lock out")
-        
-        if learn_face_status:
-            res.payload = "True"
-            self.green_blink(3, 0.5)
-            self.beep(3)
-        else:
-            res.payload = "False"
-            self.beep(1, 1)
-        
+
+        res = PeyesTrigger()
+        res.payload = found_face
+
         return res
 
     def render_DELETE(self, request):
         return True
-
-    @staticmethod
-    def beep(beep_times, duration=0.1):
-        for i in range(beep_times):
-            GPIO.output(beep_pin, GPIO.HIGH)
-            time.sleep(duration)
-            GPIO.output(beep_pin, GPIO.LOW)
-            time.sleep(duration)
-
-    @staticmethod
-    def red_blink(blink_times, duration=0.3):
-        for i in range(blink_times):
-            GPIO.output(r_led_pin, GPIO.HIGH)
-            time.sleep(duration)
-            GPIO.output(r_led_pin, GPIO.LOW)
-            time.sleep(duration)
-
-    @staticmethod
-    def green_blink(blink_times, duration=0.3):
-        for i in range(blink_times):
-            GPIO.output(g_led_pin, GPIO.HIGH)
-            time.sleep(duration)
-            GPIO.output(g_led_pin, GPIO.LOW)
-            time.sleep(duration)

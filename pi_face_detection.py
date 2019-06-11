@@ -49,34 +49,106 @@ class PiFaceDet:
         self.preview = preview
         self.face_counter = 0
 
-    def run_identification(self, sample_frames=1000):
+    def id_face_trigger(self, sample_frames=10):
 
         vs = self.get_cam()
         time.sleep(2.0)
-        fps = FPS().start()
-        frames_count = 0
 
-        known_face_found = False
+        color = blue_color
+        frame_count = 0
 
-        while frames_count < sample_frames:
+        most_similar_name = None
 
-            start = time.time()
+        while frame_count < sample_frames:
+
             frame = vs.read()
-            #f_boxes, frame_face_emb, most_similar_face = self.check_face(frame)
-            frames_count = frames_count + 1
 
-            end = time.time()
-            print("Time to process frame: {}".format(end - start))
-            fps.update()
+            start1 = time.time()
+            face_found, faces_boxes = self.detect_face(frame)
+            print("Time to detect face: {}".format(time.time() - start1))
 
-        fps.stop()
-        print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
-        print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
+            if face_found:
+                self.beep_blink(1, g_led_pin, 0.1)
 
+                start2 = time.time()
+                frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
+                print("Time to extract embeddings: {}".format(time.time() - start2))
+
+                frame_face_emb = frame_face_data[0]['embedding']
+
+                start3 = time.time()
+                most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
+                print("Time to find face in DB: {}".format(time.time() - start3))
+
+                if most_similar_name:
+                    print("Authorization confirmed".format(most_similar_name))
+                    self.beep_blink(2, g_led_pin, 0.3)
+                else:
+                    print("Alert! User not authorized detected")
+                    self.beep_blink(1, r_led_pin, 1.5)
+
+            if self.preview:
+                self.show_detections(frame, faces_boxes, color)
+                key = cv.waitKey(1)
+                if key & 0xFF == ord('q'):
+                    break
+
+            frame_count += 1
+
+        cv.destroyAllWindows()
         vs.stop()
         time.sleep(2.0)
 
-        return known_face_found
+        return most_similar_name
+
+    def learn_face_trigger(self, sample_frames=5):
+
+        vs = self.get_cam()
+        time.sleep(2.0)
+        frame_count = 0
+
+        color = blue_color
+
+        state_changed = False
+        new_name = None
+
+        while frame_count < sample_frames:
+
+            frame = vs.read()
+
+            start1 = time.time()
+            face_found, faces_boxes = self.detect_face(frame)
+            print("Time to detect face: {}".format(time.time() - start1))
+
+            if face_found:
+
+                self.beep_blink(8, g_led_pin, 0.1)
+                start4 = time.time()
+                new_face_name, new_embs_added = self.learn_new_face(faces_boxes, frame)
+                state_changed = new_embs_added
+                new_name = new_face_name
+
+                print("Time to learn face: {}".format(time.time() - start4))
+                print("New face: {} was learned.".format(new_face_name))
+
+                self.beep_blink(4, g_led_pin, 0.3)
+
+            if self.preview:
+                self.show_detections(frame, faces_boxes, color)
+                key = cv.waitKey(1)
+                if key & 0xFF == ord('q'):
+                    break
+
+            frame_count += 1
+
+        if state_changed:
+            self.save_db_state()
+
+        cv.destroyAllWindows()
+        vs.stop()
+        time.sleep(2.0)
+
+        return new_name
 
     def continuous_face_identification(self, learn_face_count):
 
@@ -90,22 +162,22 @@ class PiFaceDet:
 
             frame = vs.read()
 
-            start = time.time()
+            start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
-            #print("Time to detect face: {}".format(time.time() - start))
+            print("Time to detect face: {}".format(time.time() - start1))
 
             if face_found and learn_face_count.empty():
                 self.beep_blink(1, g_led_pin, 0.1)
 
-                #start = time.time()
+                start2 = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
-                #print("Time to extract embeddings: {}".format(time.time() - start))
+                print("Time to extract embeddings: {}".format(time.time() - start2))
 
                 frame_face_emb = frame_face_data[0]['embedding']
 
-                #start = time.time()
+                start3 = time.time()
                 most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-                #print("Time to find face in DB: {}".format(time.time() - start))
+                print("Time to find face in DB: {}".format(time.time() - start3))
 
                 if most_similar_name:
                     print("Authorization confirmed".format(most_similar_name))
@@ -117,9 +189,9 @@ class PiFaceDet:
             if face_found and not learn_face_count.empty():
 
                 self.beep_blink(8, g_led_pin, 0.1)
-                #start = time.time()
+                start4 = time.time()
                 most_similar_name, state_changed = self.learn_new_face(faces_boxes, frame)
-                #print("Time to learn face: {}".format(time.time() - start))
+                print("Time to learn face: {}".format(time.time() - start4))
 
                 print("New face: {} was learned.".format(most_similar_name))
 
@@ -135,7 +207,6 @@ class PiFaceDet:
                 if key & 0xFF == ord('q'):
                     break
 
-            print("Time to process frame: {}".format(time.time() - start))
             fps.update()
 
         fps.stop()
@@ -146,19 +217,19 @@ class PiFaceDet:
         vs.stop()
         time.sleep(2.0)
 
-    def check_face(self, frame):
-
-        face_boxes = self.face_det.extract_face(frame)
-        frame_face_emb = None
-        most_similar_emb = None
-        most_similar_name = None
-
-        if np.any(face_boxes):
-            frame_face_data = self.face_det.get_face_embeddings(face_boxes, frame)
-            frame_face_emb = frame_face_data[0]['embedding']
-            most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-
-        return face_boxes, most_similar_emb
+    # def check_face(self, frame):
+    #
+    #     face_boxes = self.face_det.extract_face(frame)
+    #     frame_face_emb = None
+    #     most_similar_emb = None
+    #     most_similar_name = None
+    #
+    #     if np.any(face_boxes):
+    #         frame_face_data = self.face_det.get_face_embeddings(face_boxes, frame)
+    #         frame_face_emb = frame_face_data[0]['embedding']
+    #         most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
+    #
+    #     return face_boxes, most_similar_emb
 
     def detect_face(self, frame):
         face_boxes = self.face_det.extract_face(frame)
@@ -188,7 +259,7 @@ class PiFaceDet:
         return most_similar_name, face_embs, match_map
 
     def learn_new_face(self, faces_boxes, frame):
-        state_changed = False
+        new_embs_added = False
 
         frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
         frame_face_emb = frame_face_data[0]['embedding']
@@ -203,7 +274,7 @@ class PiFaceDet:
             self.faces_db['face_count'] += 1
             most_similar_name = 'face {}'.format(self.faces_db['face_count'])
             self.faces_db['faces'][most_similar_name] = face
-            state_changed = True
+            new_embs_added = True
 
         elif most_similar_name and np.sum(match_map) < 5:
 
@@ -211,9 +282,9 @@ class PiFaceDet:
             index = free_face_slot_index[0][0]
             face_embs['embedding'][index] = frame_face_emb[0]
             self.faces_db['faces'][most_similar_name] = face_embs
-            state_changed = True
+            new_embs_added = True
 
-        return most_similar_name, state_changed
+        return most_similar_name, new_embs_added
 
     def save_db_state(self):
         start = time.time()
