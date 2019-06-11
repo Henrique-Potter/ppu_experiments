@@ -92,20 +92,20 @@ class PiFaceDet:
 
             start = time.time()
             face_found, faces_boxes = self.detect_face(frame)
-            print("Time to detect face: {}".format(time.time() - start))
+            #print("Time to detect face: {}".format(time.time() - start))
 
             if face_found and learn_face_count.empty():
                 self.beep_blink(1, g_led_pin, 0.1)
 
-                start = time.time()
+                #start = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
-                print("Time to extract embeddings: {}".format(time.time() - start))
+                #print("Time to extract embeddings: {}".format(time.time() - start))
 
                 frame_face_emb = frame_face_data[0]['embedding']
 
-                start = time.time()
+                #start = time.time()
                 most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-                print("Time to find face in DB: {}".format(time.time() - start))
+                #print("Time to find face in DB: {}".format(time.time() - start))
 
                 if most_similar_name:
                     print("Authorization confirmed".format(most_similar_name))
@@ -117,9 +117,9 @@ class PiFaceDet:
             if face_found and not learn_face_count.empty():
 
                 self.beep_blink(8, g_led_pin, 0.1)
-                start = time.time()
+                #start = time.time()
                 most_similar_name, state_changed = self.learn_new_face(faces_boxes, frame)
-                print("Time to learn face: {}".format(time.time() - start))
+                #print("Time to learn face: {}".format(time.time() - start))
 
                 print("New face: {} was learned.".format(most_similar_name))
 
@@ -170,7 +170,7 @@ class PiFaceDet:
 
         face_embs = None
         most_similar_name = None
-        best_matches = 2
+        best_matches = 0
         match_map = None
 
         if self.faces_db:
@@ -178,7 +178,7 @@ class PiFaceDet:
                 f_emb = np.asarray(face_data['embedding'])
 
                 face_distances = self.face_det.euclidean_distance_vec(frame_face_emb, f_emb)
-                match_map = face_distances <= 1.1
+                match_map = face_distances <= 1.0
                 matches = np.sum(match_map)
                 if matches > best_matches:
                     best_matches = matches
