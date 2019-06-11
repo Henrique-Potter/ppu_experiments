@@ -34,7 +34,8 @@ class PeyesTrigger(Resource):
         peyes_lock.release()
 
         self.payload = found_face
-        time.time() - start1
+
+        print('Face ID time: {}'.format(time.time() - start1))
         return self
 
     def render_GET_advanced(self, request, response):
