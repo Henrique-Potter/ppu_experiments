@@ -320,6 +320,7 @@ class PiFaceDet:
     def get_photo(resolution=(320, 240)):
         if use_raspiberry:
             import picamera
+            import picamera.array
             camera = picamera.PiCamera()
             try:
                 camera.resolution = resolution
