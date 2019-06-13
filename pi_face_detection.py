@@ -55,6 +55,7 @@ class PiFaceDet:
         frame_count = 0
 
         most_similar_name = None
+        self.beep_blink(1, g_led_pin, 0.2)
 
         while frame_count < sample_frames:
 
@@ -66,7 +67,7 @@ class PiFaceDet:
             print("Time to detect face: {}".format(time.time() - start1))
 
             if face_found:
-                self.beep_blink(1, g_led_pin, 0.1)
+                self.beep_blink(2, g_led_pin, 0.1)
 
                 start2 = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
@@ -80,7 +81,7 @@ class PiFaceDet:
 
                 if most_similar_name:
                     print("Authorization confirmed".format(most_similar_name))
-                    self.beep_blink(2, g_led_pin, 0.3)
+                    self.beep_blink(3, g_led_pin, 0.3)
                 else:
                     print("Alert! User not authorized detected")
                     self.beep_blink(1, r_led_pin, 1.5)
@@ -99,7 +100,8 @@ class PiFaceDet:
         return most_similar_name
 
     def learn_face_trigger(self, sample_frames=5):
-
+        
+        self.beep_blink(1, g_led_pin, 0.2)
         vs = self.get_cam()
         time.sleep(2.0)
         frame_count = 0
