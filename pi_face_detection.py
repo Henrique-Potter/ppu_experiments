@@ -52,7 +52,7 @@ class PiFaceDet:
     def id_face_trigger(self, sample_frames=10):
 
         vs = self.get_cam()
-        time.sleep(2.0)
+        time.sleep(0.5)
 
         color = blue_color
         frame_count = 0
@@ -62,6 +62,7 @@ class PiFaceDet:
         while frame_count < sample_frames:
 
             frame = vs.read()
+            frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
@@ -97,7 +98,7 @@ class PiFaceDet:
 
         cv.destroyAllWindows()
         vs.stop()
-        time.sleep(2.0)
+        #time.sleep(2.0)
 
         return most_similar_name
 
@@ -115,6 +116,7 @@ class PiFaceDet:
         while frame_count < sample_frames:
 
             frame = vs.read()
+            frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
@@ -161,6 +163,7 @@ class PiFaceDet:
         while True:
 
             frame = vs.read()
+            frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
