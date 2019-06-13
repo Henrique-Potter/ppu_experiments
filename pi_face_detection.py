@@ -51,9 +51,6 @@ class PiFaceDet:
 
     def id_face_trigger(self, sample_frames=10):
 
-        vs = self.get_cam()
-        time.sleep(0.5)
-
         color = blue_color
         frame_count = 0
 
@@ -61,7 +58,7 @@ class PiFaceDet:
 
         while frame_count < sample_frames:
 
-            frame = vs.read()
+            frame = self.get_photo()
             frame = cv.flip(frame, 0)
 
             start1 = time.time()
@@ -97,7 +94,6 @@ class PiFaceDet:
             frame_count += 1
 
         cv.destroyAllWindows()
-        vs.stop()
         #time.sleep(2.0)
 
         return most_similar_name
@@ -319,6 +315,20 @@ class PiFaceDet:
                 GPIO.output(beep_pin, GPIO.LOW)
                 GPIO.output(led_pin, GPIO.LOW)
                 time.sleep(duration)
+
+    @staticmethod
+    def get_photo(resolution=(320, 240)):
+        if use_raspiberry:
+            import picamera
+            camera = picamera.PiCamera()
+            try:
+                camera.resolution = resolution
+                rawCapture = picamera.array.PiRGBArray(camera, size=resolution)
+                camera.capture(rawCapture, format="bgr")
+                return rawCapture.array
+
+            finally:
+                camera.close()
 
     @staticmethod
     def get_cam():
