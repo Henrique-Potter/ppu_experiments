@@ -25,20 +25,7 @@ class PeyesTrigger(Resource):
         self.payload = "Peyes Trigger ID"
         self.max_age = 60
 
-    def render_GET(self, request):
-        start1 = time.time()
-
-        peyes_lock.acquire()
-
-        found_face, frame_as_string = face_detection.id_face_trigger(1)
-        peyes_lock.release()
-
-        self.payload = str(frame_as_string, 'UTF-8')
-
-        print('Face ID time: {}'.format(time.time() - start1))
-        return self
-
-    # def render_GET_advanced(self, request, response):
+    # def render_GET(self, request):
     #     start1 = time.time()
     #
     #     peyes_lock.acquire()
@@ -46,11 +33,30 @@ class PeyesTrigger(Resource):
     #     found_face, frame_as_string = face_detection.id_face_trigger(1)
     #     peyes_lock.release()
     #
-    #     self.payload = frame_as_string
-    #     response.code = defines.Codes.CONTENT.number
+    #     self.payload = str(frame_as_string, 'UTF-8')
     #
     #     print('Face ID time: {}'.format(time.time() - start1))
+    #
+    #     print(frame_as_string)
+    #     print(self.payload)
     #     return self
+
+    def render_GET_advanced(self, request, response):
+        start1 = time.time()
+
+        peyes_lock.acquire()
+
+        found_face, frame_as_string = face_detection.id_face_trigger(1)
+        peyes_lock.release()
+
+        response.payload = self.payload = str(frame_as_string, 'UTF-8')
+
+        print('Face ID time: {}'.format(time.time() - start1))
+
+        print(frame_as_string)
+        print(self.payload)
+
+        return self, response
 
     def render_PUT(self, request):
         self.payload = request.payload
