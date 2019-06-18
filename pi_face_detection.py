@@ -104,7 +104,7 @@ class PiFaceDet:
         frame_as_string = None
 
         if np.any(face_drawn_frame):
-            frame_as_string = np.array2string(face_drawn_frame)
+            frame_as_string = frame_as_string.tostring()
 
         return most_similar_name, frame_as_string
 
