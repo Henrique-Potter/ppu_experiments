@@ -33,13 +33,24 @@ class PeyesTrigger(Resource):
         found_face, frame_as_string = face_detection.id_face_trigger(1)
         peyes_lock.release()
 
-        self.payload = frame_as_string
+        self.payload = str(frame_as_string, 'UTF-8')
 
         print('Face ID time: {}'.format(time.time() - start1))
         return self
 
-    def render_GET_advanced(self, request, response):
-        pass
+    # def render_GET_advanced(self, request, response):
+    #     start1 = time.time()
+    #
+    #     peyes_lock.acquire()
+    #
+    #     found_face, frame_as_string = face_detection.id_face_trigger(1)
+    #     peyes_lock.release()
+    #
+    #     self.payload = frame_as_string
+    #     response.code = defines.Codes.CONTENT.number
+    #
+    #     print('Face ID time: {}'.format(time.time() - start1))
+    #     return self
 
     def render_PUT(self, request):
         self.payload = request.payload
