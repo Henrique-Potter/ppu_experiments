@@ -33,7 +33,7 @@ class PeyesTrigger(Resource):
         found_face, frame_as_string = face_detection.id_face_trigger(1)
         peyes_lock.release()
 
-        self.payload = bytes(frame_as_string, encoding='utf8')
+        self.payload = frame_as_string
 
         print('Face ID time: {}'.format(time.time() - start1))
 
