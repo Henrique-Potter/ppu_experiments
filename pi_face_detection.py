@@ -57,6 +57,8 @@ class PiFaceDet:
         most_similar_name = None
         self.beep_blink(1, g_led_pin, 0.2)
 
+        face_drawn_frame = None
+
         while frame_count < sample_frames:
 
             frame = self.get_photo()
@@ -65,6 +67,8 @@ class PiFaceDet:
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
             print("Time to detect face: {}".format(time.time() - start1))
+
+            face_drawn_frame = self.show_detections(frame, faces_boxes)
 
             if face_found:
                 self.beep_blink(2, g_led_pin, 0.1)
@@ -87,7 +91,7 @@ class PiFaceDet:
                     self.beep_blink(1, r_led_pin, 1.5)
 
             if self.preview:
-                self.show_detections(frame, faces_boxes, color)
+                self.show_detections(frame, faces_boxes)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
@@ -97,10 +101,15 @@ class PiFaceDet:
         cv.destroyAllWindows()
         #time.sleep(2.0)
 
-        return most_similar_name
+        frame_as_string = None
+
+        if face_drawn_frame:
+            frame_as_string = np.array2string(face_drawn_frame)
+
+        return most_similar_name, frame_as_string
 
     def learn_face_trigger(self, sample_frames=5):
-        
+
         self.beep_blink(1, g_led_pin, 0.2)
         vs = self.get_cam()
         time.sleep(2.0)
@@ -134,7 +143,7 @@ class PiFaceDet:
                 self.beep_blink(4, g_led_pin, 0.3)
 
             if self.preview:
-                self.show_detections(frame, faces_boxes, color)
+                self.show_detections(frame, faces_boxes)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
@@ -203,7 +212,7 @@ class PiFaceDet:
                     self.save_db_state()
 
             if self.preview:
-                self.show_detections(frame, faces_boxes, color)
+                self.show_detections(frame, faces_boxes)
                 key = cv.waitKey(1)
                 if key & 0xFF == ord('q'):
                     break
@@ -341,12 +350,12 @@ class PiFaceDet:
             return VideoStream(src=0).start()
 
     @staticmethod
-    def show_detections(img_cp, f_boxes, color):
+    def show_detections(img_cp, f_boxes):
         for f_box in f_boxes:
-            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
+            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (0,0,255), 2)
             cv.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
-        cv.imshow("Debugging", img_cp)
+        return img_cp
 
 
 class NumpyEncoder(json.JSONEncoder):
