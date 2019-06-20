@@ -337,10 +337,17 @@ class PiFaceDet:
                 camera.resolution = resolution
                 rawCapture = picamera.array.PiRGBArray(camera, size=resolution)
                 camera.capture(rawCapture, format="bgr")
-                return rawCapture.array
 
+                return rawCapture.array
             finally:
                 camera.close()
+        else:
+            stream = cv.VideoCapture(0)
+            try:
+                (grabbed, frame) = stream.read()
+                return frame
+            finally:
+                stream.release()
 
     @staticmethod
     def get_cam():

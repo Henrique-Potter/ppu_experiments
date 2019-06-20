@@ -37,6 +37,8 @@ class PeyesTrigger(Resource):
 
         print('Face ID time: {}'.format(time.time() - start1))
 
+        string_list = ''.join(str(r) for v in frame_as_string for r in v)
+        self.payload = string_list
         #print(found_face)
         #print(self.payload)
 

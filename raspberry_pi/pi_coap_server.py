@@ -23,7 +23,7 @@ def main():
     server = CoAPServer("192.168.0.177", 5683)
     try:
         print("Server Started at {}".format(server.server_address))
-        server.listen(30)
+        server.listen(10)
 
     except KeyboardInterrupt:
         print("Server Shutdown")
