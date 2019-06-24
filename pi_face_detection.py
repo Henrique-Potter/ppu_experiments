@@ -1,6 +1,6 @@
 from imutils.video import VideoStream
 from imutils.video import FPS
-import face_match as fm
+from ai import face_match as fm
 from pathlib import Path
 import json
 import numpy as np
@@ -90,23 +90,35 @@ class PiFaceDet:
                     print("Alert! User not authorized detected")
                     self.beep_blink(1, r_led_pin, 1.5)
 
-            if self.preview:
-                self.show_detections(frame, faces_boxes)
-                key = cv.waitKey(1)
-                if key & 0xFF == ord('q'):
-                    break
+            # if self.preview:
+            #     self.show_detections(frame, faces_boxes)
+            #     key = cv.waitKey(1)
+            #     if key & 0xFF == ord('q'):
+            #         break
 
             frame_count += 1
 
         cv.destroyAllWindows()
         #time.sleep(2.0)
 
-        frame_as_string = None
+        frame_as_json = None
+        data_dict = {}
 
+        frame_as_json = self.compress_to_jpeg(data_dict, face_drawn_frame, frame_as_json, most_similar_name)
+
+        return most_similar_name, frame_as_json
+
+    @staticmethod
+    def compress_to_jpeg(data_dict, face_drawn_frame, frame_as_json, face_name):
         if np.any(face_drawn_frame):
-            frame_as_string = face_drawn_frame.tolist()
+            import json
+            encode_param = [int(cv.IMWRITE_JPEG_QUALITY), 90]
+            result, encimg = cv.imencode('.jpg', face_drawn_frame, encode_param)
 
-        return most_similar_name, frame_as_string
+            data_dict['detection_frame'] = encimg.tolist()
+            data_dict['person_name'] = face_name
+            frame_as_json = json.dumps(data_dict)
+        return frame_as_json
 
     def learn_face_trigger(self, sample_frames=5):
 

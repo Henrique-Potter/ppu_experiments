@@ -1,4 +1,4 @@
-import human_detection as hd
+from ai import human_detection as hd
 import experiment_functions as hdu
 import cv2 as cv
 

@@ -93,8 +93,7 @@ def plot_face_embeddings_data(df_data, energy_traces, fd_embeddings_distance, fd
     plt.show()
 
 
-def raw_attack_rate_metric(af_us_from_user_s_rate, as_uf_rate, energy_traces, us_af_from_a_fails_rate, x_holder,
-                           x_label):
+def raw_attack_rate_metric(af_us_from_user_s_rate, as_uf_rate, energy_traces, us_af_from_a_fails_rate, x_holder, x_label):
     # Attack Success rate
     fig, axis = plt.subplots(2, 1)
     # Truth ROC
@@ -117,8 +116,6 @@ def raw_attack_rate_metric(af_us_from_user_s_rate, as_uf_rate, energy_traces, us
 def roc_plot(energy_traces, fd_fpr, fd_recall, hd_fpr, hd_recall, x_holder, x_label):
 
     fig, axis = plt.subplots(2, 1)
-
-
 
     # Truth ROC
     axis[0].set_title('User & Adversary - Truth RoC')

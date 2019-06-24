@@ -1,13 +1,15 @@
 import tensorflow as tf
-from face_detection import detect_face
-import facenet
-import cv2
-import imutils
 import numpy as np
+from ai import facenet
+from face_detection import detect_face
+import cv2
 import argparse
+import matplotlib.pyplot as plt
+import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--img", type=str, required=True)
+parser.add_argument("--img1", type = str, required=True)
+parser.add_argument("--img2", type = str, required=True)
 args = parser.parse_args()
 
 # some constants kept as default from facenet
@@ -17,7 +19,9 @@ factor = 0.709
 margin = 44
 input_image_size = 160
 
+
 sess = tf.Session()
+
 # read pnet, rnet, onet models from face_detection directory and files are det1.npy, det2.npy, det3.npy
 pnet, rnet, onet = detect_face.create_mtcnn(sess, 'face_detection')
 
@@ -30,10 +34,11 @@ embeddings = tf.get_default_graph().get_tensor_by_name("embeddings:0")
 phase_train_placeholder = tf.get_default_graph().get_tensor_by_name("phase_train:0")
 embedding_size = embeddings.get_shape()[1]
 
+
 def getFace(img):
     faces = []
     img_size = np.asarray(img.shape)[0:2]
-    bounding_boxes, points = detect_face.detect_face(img, minsize, pnet, rnet, onet, threshold, factor)
+    bounding_boxes, _ = detect_face.detect_face(img, minsize, pnet, rnet, onet, threshold, factor)
     if not len(bounding_boxes) == 0:
         for face in bounding_boxes:
             if face[4] > 0.50:
@@ -43,23 +48,47 @@ def getFace(img):
                 bb[1] = np.maximum(det[1] - margin / 2, 0)
                 bb[2] = np.minimum(det[2] + margin / 2, img_size[1])
                 bb[3] = np.minimum(det[3] + margin / 2, img_size[0])
+                plt.show(img)
                 cropped = img[bb[1]:bb[3], bb[0]:bb[2], :]
+                plt.show(cropped)
                 resized = cv2.resize(cropped, (input_image_size, input_image_size), interpolation=cv2.INTER_CUBIC)
                 prewhitened = facenet.prewhiten(resized)
-                faces.append({'face':resized,'rect':[bb[0],bb[1],bb[2],bb[3]], 'embedding':getEmbedding(prewhitened)})
+                faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': getEmbedding(prewhitened)})
     return faces
 
+
 def getEmbedding(resized):
-    reshaped = resized.reshape(-1,input_image_size,input_image_size,3)
+    reshaped = resized.reshape(-1, input_image_size, input_image_size, 3)
     feed_dict = {images_placeholder: reshaped, phase_train_placeholder: False}
-    # print(feed_dict)
     embedding = sess.run(embeddings, feed_dict=feed_dict)
     return embedding
 
-img = cv2.imread(args.img)
-img = imutils.resize(img,width=1000)
-faces = getFace(img)
-for face in faces:
-    print("Embeddings = "+str(face['embedding']))
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+
+def compare2face(img1, img2):
+    face1 = getFace(img1)
+    face2 = getFace(img2)
+    if face1 and face2:
+        # calculate Euclidean distance
+        dist = np.sqrt(np.sum(np.square(np.subtract(face1[0]['embedding'], face2[0]['embedding']))))
+        return dist
+    else:
+        return -1
+
+
+img1 = cv2.imread(args.img1)
+img2 = cv2.imread(args.img2)
+
+start_time = time.time()
+face_match_distance = compare2face(img1, img2)
+print("--- %s seconds ---" % (time.time() - start_time))
+
+face_match_threshold = 1.10
+
+print("distance = " + str(face_match_distance))
+print("Result = " + ("same person" if face_match_distance <= face_match_threshold else "not same person"))
+
+plt.subplot(111), plt.imshow(img2), plt.title('Original')
+plt.xticks([]), plt.yticks([])
+plt.show()
+distances_found = []
+

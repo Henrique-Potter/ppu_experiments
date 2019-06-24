@@ -24,9 +24,9 @@ class PeyesTrigger(resource.Resource):
 
     def __init__(self):
         super().__init__()
-        self.set_content(b"This is the resource's default content. It is padded "\
-                b"with numbers to be large enough to trigger blockwise "\
-                b"transfer.\n")
+        #self.set_content(b"This is the resource's default content. It is padded "\
+         #       b"with numbers to be large enough to trigger blockwise "\
+          #      b"transfer.\n")
 
     def set_content(self, content):
         self.content = content
@@ -46,11 +46,9 @@ class PeyesTrigger(resource.Resource):
 
         print('Face ID time: {}'.format(time.time() - start1))
 
-        string_list = ''.join(str(r) for v in frame_as_string for r in v)
-        self.payload = string_list
+        self.content = frame_as_string.encode('utf16')
         #print(found_face)
         #print(self.payload)
-
 
         return aiocoap.Message(payload=self.content)
 

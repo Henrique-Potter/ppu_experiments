@@ -22,8 +22,7 @@ def classify_frame(net, inputQueue, outputQueue):
 			# construct a blob from it
 			frame = inputQueue.get()
 			frame = cv2.resize(frame, (300, 300))
-			blob = cv2.dnn.blobFromImage(frame, 0.007843,
-				(300, 300), 127.5)
+			blob = cv2.dnn.blobFromImage(frame, 0.007843, (300, 300), 127.5)
 
 			# set the blob as input to our deep learning object
 			# detector and obtain the detections
@@ -35,12 +34,9 @@ def classify_frame(net, inputQueue, outputQueue):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--prototxt", required=True,
-	help="path to Caffe 'deploy' prototxt file")
-ap.add_argument("-m", "--model", required=True,
-	help="path to Caffe pre-trained model")
-ap.add_argument("-c", "--confidence", type=float, default=0.2,
-	help="minimum probability to filter weak detections")
+ap.add_argument("-p", "--prototxt", required=True, help="path to Caffe 'deploy' prototxt file")
+ap.add_argument("-m", "--model", required=True, help="path to Caffe pre-trained model")
+ap.add_argument("-c", "--confidence", type=float, default=0.2, help="minimum probability to filter weak detections")
 args = vars(ap.parse_args())
 
 

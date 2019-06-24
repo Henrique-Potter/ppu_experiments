@@ -1,8 +1,8 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 import experiment_functions as ef
 from multiprocessing.dummy import Pool as ThreadPool
-import human_detection as hd
-import face_match as fm
+from ai import human_detection as hd
+from ai import face_match as fm
 from pathlib import Path
 import argparse
 import time

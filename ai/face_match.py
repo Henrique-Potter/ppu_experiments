@@ -14,7 +14,7 @@ class FaceMatch:
         self.margin = 44
         self.input_image_size = 160
 
-        import facenet
+        from ai import facenet
         import tensorflow as tf
 
         self.sess = tf.Session()
@@ -53,9 +53,18 @@ class FaceMatch:
 
         return faces_boxes
 
+    @staticmethod
+    def show_face_detection(img_cp, f_boxes):
+
+        for f_box in f_boxes:
+            cv2.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (0,0,255), 2)
+            cv2.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+
+        return img_cp
+
     def get_face_embeddings(self, faces_boxes, img, debug_faces=False):
 
-        import facenet
+        from ai import facenet
 
         embeddings = []
         if not len(faces_boxes) == 0:
