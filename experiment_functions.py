@@ -1,5 +1,4 @@
 import numpy as np
-import cv2 as cv
 
 
 class BlurExperiments:
@@ -10,7 +9,7 @@ class BlurExperiments:
 
     @staticmethod
     def show_detections(img_cp, h_boxes, f_boxes, color, scores, classes, threshold):
-
+        import cv2 as cv
         for f_box in f_boxes:
 
             cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
@@ -28,10 +27,12 @@ class BlurExperiments:
         cv.imshow("Debugging", img_cp)
 
     @staticmethod
-    def image_resize(image, width=None, height=None, inter=cv.INTER_AREA):
+    def image_resize(image, width=None, height=None):
+        import cv2 as cv
         dim = None
-        (h, w) = image.shape[:2]
+        inter = cv.INTER_AREA
 
+        (h, w) = image.shape[:2]
         if width is None and height is None:
             return image
 
@@ -48,7 +49,7 @@ class BlurExperiments:
         return resized
 
     def blur_iter_experiment(self, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", blur_box_size=5, preview=False):
-
+        import cv2 as cv
         import time
         import pandas as pd
 

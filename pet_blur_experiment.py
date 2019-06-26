@@ -1,7 +1,7 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 import experiment_functions as ef
 from multiprocessing.dummy import Pool as ThreadPool
-from ai import human_detection as hd
+from ai import object_detection as hd
 from ai import face_match as fm
 from pathlib import Path
 import argparse
@@ -54,7 +54,7 @@ def main_method():
     images = Path(args.images).glob("*.jpg")
 
     face_det = fm.FaceMatch(args.fid_m)
-    human_det = hd.DetectorAPI(path_to_ckpt=args.hd_m)
+    human_det = hd.CocoDetectorAPI(path_to_ckpt=args.hd_m)
 
     experiment = ef.BlurExperiments(face_det, human_det)
 

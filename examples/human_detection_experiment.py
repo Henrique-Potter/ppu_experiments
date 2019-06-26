@@ -1,4 +1,4 @@
-from ai import human_detection as hd
+from ai import object_detection as hd
 import experiment_functions as hdu
 import cv2 as cv
 
@@ -24,7 +24,7 @@ def blur_avg_box_experiment(img_base, iter_max):
 
 
 model_path = 'object_detection_models/frozen_inference_graph.pb'
-odapi = hd.DetectorAPI(path_to_ckpt=model_path)
+odapi = hd.CocoDetectorAPI(path_to_ckpt=model_path)
 threshold = 0.7
 
 img1 = cv.imread("./images/obama_alone_office.jpg")

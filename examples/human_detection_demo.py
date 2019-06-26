@@ -1,10 +1,10 @@
-from ai import human_detection as hd
+from ai import object_detection as hd
 import cv2 as cv
 
 
 if __name__ == "__main__":
     model_path = 'object_detection_models/frozen_inference_graph.pb'
-    odapi = hd.DetectorAPI(path_to_ckpt=model_path)
+    odapi = hd.CocoDetectorAPI(path_to_ckpt=model_path)
     threshold = 0.7
 
     cap = cv.VideoCapture('video/TownCentreXVID.avi')

@@ -2,11 +2,11 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from ai import face_match as fm
 from pathlib import Path
-import json
 import numpy as np
 import cv2 as cv
 import platform
 import time
+import json
 import os
 
 blue_color = (255, 0, 0)

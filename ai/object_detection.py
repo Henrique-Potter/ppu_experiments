@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 
-class DetectorAPI:
+class CocoDetectorAPI:
 
     def __init__(self, path_to_ckpt=None):
 
@@ -44,38 +44,34 @@ class DetectorAPI:
 
         im_height, im_width, _ = image.shape
         np_mask = np.array([im_height, im_width, im_height, im_width], dtype=np.int16)
-        res_boxes[0, :, :] = (res_boxes[0, :, :] * np_mask).astype(int)
+        res_boxes[0, :, :] = res_boxes[0, :, :] * np_mask
+        res_boxes = res_boxes.astype(np.int16)
 
-        humans_detected_map = np.logical_and(res_scores[0] > threshold, res_classes[0] == obj_class)
+        objects_detected_map = np.logical_and(res_scores[0] > threshold, res_classes[0] == obj_class)
 
-        # boxes_list = [None for i in range(res_boxes.shape[1])]
-        # np_boxes_list  = zeros[]
-        #
-        # for detection_index in range(res_boxes.shape[1]):
-        #     boxes_list[detection_index] = (
-        #                 int(res_boxes[0, detection_index, 0]*im_height),
-        #                 int(res_boxes[0, detection_index, 1]*im_width),
-        #                 int(res_boxes[0, detection_index, 2]*im_height),
-        #                 int(res_boxes[0, detection_index, 3]*im_width))
+        np_scores = np.take(res_scores[0], np.where(objects_detected_map))
+        np_classes = np.take(res_classes[0], np.where(objects_detected_map))
 
-        return res_boxes[0], res_scores[0], res_classes[0], humans_detected_map, res_num
+        return res_boxes[0], np_scores, np_classes[0], res_num
 
     def close(self):
         self.sess.close()
         self.default_graph.close()
 
     @staticmethod
-    def get_detected_persons(boxes, scores, classes, threshold):
+    def get_detected_objs(boxes, scores, classes, threshold, target=1):
 
-        h_boxes = []
-        h_scores = []
+        obj_boxes = []
+        obj_scores = []
 
         for i in range(len(boxes)):
+            if scores[i] == 0:
+                break
             # Class 1 represents detected humans
-            if classes[i] == 1 and scores[i] > threshold:
-                h_boxes.append(boxes[i])
-                h_scores.append(scores[i])
+            if classes[i] == target and scores[i] > threshold:
+                obj_boxes.append(boxes[i])
+                obj_scores.append(scores[i])
 
-        return h_boxes, h_scores
+        return obj_boxes, obj_scores
 
 
