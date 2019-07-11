@@ -19,6 +19,8 @@ beep_pin = 40
 g_led_pin = 36
 r_led_pin = 38
 
+trigger_performance_data = np.zeros([1, 2])
+
 if platform.uname()[1] == 'raspberrypi':
     import RPi.GPIO as GPIO
     GPIO.setmode(GPIO.BOARD)
@@ -90,16 +92,11 @@ class PiFaceDet:
                     print("Alert! User not authorized detected")
                     self.beep_blink(1, r_led_pin, 1.5)
 
-            # if self.preview:
-            #     self.show_detections(frame, faces_boxes)
-            #     key = cv.waitKey(1)
-            #     if key & 0xFF == ord('q'):
-            #         break
+            if self.preview:
+                img = self.show_detections(frame, faces_boxes)
+                cv.imwrite("test_img.jpg", img)
 
             frame_count += 1
-
-        cv.destroyAllWindows()
-        #time.sleep(2.0)
 
         frame_as_json = None
         data_dict = {}
@@ -171,7 +168,9 @@ class PiFaceDet:
 
         return new_name
 
-    def continuous_face_identification(self, learn_face_count):
+    def continuous_face_identification(self, process_queue):
+
+        last_detection_time = 0
 
         vs = self.get_cam()
         time.sleep(2.0)
@@ -181,25 +180,33 @@ class PiFaceDet:
 
         while True:
 
+            if not process_queue.empty():
+                msg_code = process_queue.get_nowait()
+            else:
+                msg_code = None
+
             frame = vs.read()
-            frame = cv.flip(frame, 0)
+
+            # if platform.uname()[1] == 'raspberrypi':
+            #     frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
-            print("Time to detect face: {}".format(time.time() - start1))
+            #print("Time to detect face: {}".format(time.time() - start1))
 
-            if face_found and learn_face_count.empty():
+            if face_found and msg_code is None:
+                last_detection_time = time.time()
                 self.beep_blink(1, g_led_pin, 0.1)
 
                 start2 = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
-                print("Time to extract embeddings: {}".format(time.time() - start2))
+                #print("Time to extract embeddings: {}".format(time.time() - start2))
 
                 frame_face_emb = frame_face_data[0]['embedding']
 
                 start3 = time.time()
                 most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-                print("Time to find face in DB: {}".format(time.time() - start3))
+                #print("Time to find face in DB: {}".format(time.time() - start3))
 
                 if most_similar_name:
                     print("Authorization for {} confirmed".format(most_similar_name))
@@ -208,7 +215,7 @@ class PiFaceDet:
                     print("Alert! User not authorized detected")
                     self.beep_blink(1, r_led_pin, 1.5)
 
-            if face_found and not learn_face_count.empty():
+            if face_found and msg_code == 2:
 
                 self.beep_blink(8, g_led_pin, 0.1)
                 start4 = time.time()
@@ -217,15 +224,18 @@ class PiFaceDet:
 
                 print("New face: {} was learned.".format(most_similar_name))
 
-                learn_face_count.get()
+                process_queue.get()
                 self.beep_blink(4, g_led_pin, 0.3)
 
                 if state_changed:
                     self.save_db_state()
 
+            self.evaluate_trigger(last_detection_time, msg_code)
+
             if self.preview:
-                self.show_detections(frame, faces_boxes)
+                img = self.show_detections(frame, faces_boxes)
                 key = cv.waitKey(1)
+                cv.imshow('', img)
                 if key & 0xFF == ord('q'):
                     break
 
@@ -238,6 +248,19 @@ class PiFaceDet:
         cv.destroyAllWindows()
         vs.stop()
         time.sleep(2.0)
+
+    @staticmethod
+    def evaluate_trigger(last_detection_time, msg_code):
+        det_elapsed = time.time() - last_detection_time
+        if msg_code == 1 and det_elapsed <= 3:
+            trigger_performance_data[0, 0] += 1
+            print('Trigger Successful! Count: {}'.format(trigger_performance_data[0, 0]))
+            print('Time elapsed since last detection: {}'.format(det_elapsed))
+
+        elif msg_code == 1 and det_elapsed > 3:
+            trigger_performance_data[0, 1] += 1
+            print('Trigger Failed! Count: {}'.format(trigger_performance_data[0, 1]))
+            print('Time elapsed since last detection: {}'.format(det_elapsed))
 
     def detect_face(self, frame):
         face_boxes = self.face_det.extract_face(frame)
@@ -355,6 +378,7 @@ class PiFaceDet:
                 camera.close()
         else:
             stream = cv.VideoCapture(0)
+            time.sleep(1)
             try:
                 (grabbed, frame) = stream.read()
                 return frame
@@ -369,7 +393,8 @@ class PiFaceDet:
             return VideoStream(src=0).start()
 
     @staticmethod
-    def show_detections(img_cp, f_boxes):
+    def show_detections(img, f_boxes):
+        img_cp = img.copy()
         for f_box in f_boxes:
             cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (0,0,255), 2)
             cv.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))

@@ -7,13 +7,13 @@ from pi_face_detection import PiFaceDet
 from threading import Lock
 
 peyes_lock = Lock()
-inputQueue = Queue(maxsize=3)
+inputQueue = Queue(maxsize=5)
 
 continuous_server = False
 
 
 def start_face_det(learn_face_count):
-    f = PiFaceDet()
+    f = PiFaceDet(preview=True)
     f.continuous_face_identification(learn_face_count)
 
 
@@ -41,6 +41,8 @@ class PeyesC(Resource):
             continuous_server = True
             self.payload = "ID process started Successfully!"
         else:
+            inputQueue.put(1)
+            self.payload = "Trigger Sensor sent a get request!"
             self.payload = "Continuous ID process is already ON!"
 
         return self
@@ -57,11 +59,11 @@ class PeyesC(Resource):
         res = PeyesC()
 
         if continuous_server:
-            inputQueue.put(True)
-            inputQueue.put(True)
-            inputQueue.put(True)
-            inputQueue.put(True)
-            inputQueue.put(True)
+            inputQueue.put(2)
+            inputQueue.put(2)
+            inputQueue.put(2)
+            inputQueue.put(2)
+            inputQueue.put(2)
             res.payload = 'Request sent successfully'
         else:
             res.payload = 'ID server is not running'

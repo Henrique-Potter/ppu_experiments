@@ -3,19 +3,19 @@ from coapthon.server.coap import CoAP
 import platform
 
 if platform.uname()[1] =='raspberrypi':
-    #from peyes_c_resource import PeyesC
-    from peyes_nc_resource import PeyesTrigger
+    from peyes_c_resource import PeyesC
+    #from peyes_nc_resource import PeyesTrigger
 else:
-    #from raspberry_pi.peyes_c_resource import PeyesC
-    from raspberry_pi.peyes_nc_resource import PeyesTrigger
+    from raspberry_pi.peyes_c_resource import PeyesC
+    #from raspberry_pi.peyes_nc_resource import PeyesTrigger
 
 
 class CoAPServer(CoAP):
     def __init__(self, host, port):
         CoAP.__init__(self, (host, port))
 
-        #self.add_resource('peyes/', PeyesC())
-        self.add_resource('peyes/', PeyesTrigger())
+        self.add_resource('peyes/', PeyesC())
+        #self.add_resource('peyes/', PeyesTrigger())
 
 
 def main():

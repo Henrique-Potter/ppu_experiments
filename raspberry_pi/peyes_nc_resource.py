@@ -10,7 +10,7 @@ peyes_lock = Lock()
 
 
 print("\n\n----------Tensorflow Loading----------\n\n")
-face_detection = PiFaceDet()
+face_detection = PiFaceDet(preview=False)
 print("\n----------Tensorflow Loading complete----------\n")
 print("\n\n----------Tensorflow wam-up----------\n\n")
 face_detection.id_face_trigger(1)
@@ -29,37 +29,12 @@ class PeyesTrigger(Resource):
         start1 = time.time()
 
         peyes_lock.acquire()
-
         found_face, frame_as_string = face_detection.id_face_trigger(1)
         peyes_lock.release()
 
-        #self.payload = found_face
-
         print('Face ID time: {}'.format(time.time() - start1))
 
-        string_list = ''.join(str(r) for v in frame_as_string for r in v)
-        self.payload = string_list
-        #print(found_face)
-        #print(self.payload)
-
         return self
-
-    # def render_GET_advanced(self, request, response):
-    #     start1 = time.time()
-    #
-    #     peyes_lock.acquire()
-    #
-    #     found_face, frame_as_string = face_detection.id_face_trigger(1)
-    #     peyes_lock.release()
-    #
-    #     response.payload = self.payload = str(frame_as_string, 'UTF-8')
-    #
-    #     print('Face ID time: {}'.format(time.time() - start1))
-    #
-    #     print(frame_as_string)
-    #     print(self.payload)
-    #
-    #     return self, response
 
     def render_PUT(self, request):
         self.payload = request.payload

@@ -2,7 +2,6 @@
 import asyncio
 import platform
 import logging
-import datetime
 import argparse
 
 import aiocoap.resource as resource
@@ -34,7 +33,7 @@ def main():
     # root.add_resource(('other', 'separate'), SeparateLargeResource())
 
     #server_address = args.ip
-    server_address = 'localhost'
+    server_address = 'fe80::2518:6bb8:87de:5c45%12'
     try:
         print("Server Started at {}".format(server_address))
         asyncio.Task(aiocoap.Context.create_server_context(root, bind=(server_address, 5683)))
@@ -53,21 +52,4 @@ if __name__ == "__main__":
     main()
 
 
-# def main():
-#
-#     server = CoAPServer("192.168.0.177", 5683)
-#     try:
-#         print("Server Started at {}".format(server.server_address))
-#         server.listen(10)
-#
-#     except KeyboardInterrupt:
-#         print("Server Shutdown")
-#         server.close()
-#         print("Exiting...")
-#         if platform.uname()[1] =='raspberrypi':
-#             import RPi.GPIO as GPIO
-#             GPIO.cleanup()
-#
-#
-# if __name__ == '__main__':
-#     main()
+
