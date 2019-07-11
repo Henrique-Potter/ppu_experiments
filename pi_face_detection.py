@@ -188,6 +188,7 @@ class PiFaceDet:
                 msg_code = None
 
             frame = vs.read()
+            frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
