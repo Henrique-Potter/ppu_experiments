@@ -8,6 +8,7 @@ import platform
 import time
 import json
 import os
+import pandas as pd
 
 blue_color = (255, 0, 0)
 green_color = (0, 255, 0)
@@ -18,8 +19,6 @@ use_raspiberry = False
 beep_pin = 40
 g_led_pin = 36
 r_led_pin = 38
-
-trigger_performance_data = np.zeros([1, 3])
 
 if platform.uname()[1] == 'raspberrypi':
     import RPi.GPIO as GPIO
@@ -50,6 +49,11 @@ class PiFaceDet:
         self.face_det = fm.FaceMatch(model_path)
         self.preview = preview
         self.face_counter = 0
+
+        if os.path.exists("trigger_metrics.xlsx"):
+            self.trigger_metrics_np = pd.read_pickle(str("trigger_metrics.xlsx")).values
+        else:
+            self.trigger_metrics_np = np.zeros([1, 3])
 
     def id_face_trigger(self, sample_frames=10):
 
@@ -178,6 +182,8 @@ class PiFaceDet:
         vs = self.get_cam()
         time.sleep(2.0)
 
+        save_trigger_metrics_counter = 0
+
         while True:
 
             if not process_queue.empty():
@@ -203,22 +209,32 @@ class PiFaceDet:
 
             if msg_code == 1:
                 if det_elapsed <= 3:
-                    trigger_performance_data[0, 0] += 1
+                    self.trigger_metrics_np[0, 0] += 1
                     face_det_flag = False
-                    print('Trigger Successful! Count: {}'.format(trigger_performance_data[0, 0]))
+                    print('Trigger Successful! Count: {}'.format(self.trigger_metrics_np[0, 0]))
                     print('Time elapsed since last detection: {}'.format(det_elapsed))
+                    save_trigger_metrics_counter += 1
                 else:
                     face_det_flag = False
-                    trigger_performance_data[0, 1] += 1
-                    print('Trigger is Late! Count: {}'.format(trigger_performance_data[0, 1]))
+                    self.trigger_metrics_np[0, 1] += 1
+                    print('Trigger is Late! Count: {}'.format(self.trigger_metrics_np[0, 1]))
                     print('Time elapsed since last detection: {}'.format(det_elapsed))
+                    save_trigger_metrics_counter += 1
 
             if 3 < det_elapsed and face_det_flag:
-                trigger_performance_data[0, 2] += 1
+                self.trigger_metrics_np[0, 2] += 1
                 face_det_flag = False
-                print('Trigger missed a detection! Count: {}'.format(trigger_performance_data[0, 2]))
+                print('Trigger missed a detection! Count: {}'.format(self.trigger_metrics_np[0, 2]))
                 print('Time elapsed since last detection: {}'.format(det_elapsed))
+                save_trigger_metrics_counter += 1
                 time.sleep(5)
+
+            if save_trigger_metrics_counter == 50:
+                total_data_df = pd.DataFrame(data=self.trigger_metrics_np, columns=['TP', 'FP', 'FN'])
+                total_data_df.to_excel("trigger_metrics.xlsx")
+                save_trigger_metrics_counter = 0
+                print('Saving trigger metrics.')
+                print(total_data_df)
 
     def continuous_face_identification(self, process_queue):
         last_detection_time = 0
