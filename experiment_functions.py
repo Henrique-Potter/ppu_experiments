@@ -8,23 +8,27 @@ class BlurExperiments:
         self.human_det = hd_model
 
     @staticmethod
-    def show_detections(img_cp, h_boxes, f_boxes, color, scores, classes, threshold):
+    def show_detections(img_cp, h_boxes, f_boxes, scores, obj_map, threshold, window_title='Debugging'):
         import cv2 as cv
-        for f_box in f_boxes:
 
-            cv.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), color, 2)
-            cv.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+        img_temp = img_cp.copy()
+
+        cv.putText(img_temp, window_title, (5, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0))
+
+        for f_box in f_boxes:
+            cv.rectangle(img_temp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (255, 0, 0), 2)
+            cv.putText(img_temp, "Face", (f_box[2] + 10, f_box[3]), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
         for i in range(len(h_boxes)):
             # Class 1 represents human
-            if classes[i] == 1 and scores[i] > threshold:
+            if obj_map[i] and scores[i] > threshold:
                 box = h_boxes[i]
                 label = "Person: " + str(scores[i])
 
-                cv.rectangle(img_cp, (int(box[1]), int(box[0])), (int(box[3]), int(box[2])), (255, 0, 0), 2)
-                cv.putText(img_cp, label, (int(box[1]), int(box[0] - 5)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
+                cv.rectangle(img_temp, (int(box[1]), int(box[0])), (int(box[3]), int(box[2])), (255, 0, 0), 2)
+                cv.putText(img_temp, label, (int(box[1]), int(box[0] - 5)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
-        cv.imshow("Debugging", img_cp)
+        cv.imshow("", img_temp)
 
     @staticmethod
     def image_resize(image, width=None, height=None):
@@ -48,13 +52,14 @@ class BlurExperiments:
 
         return resized
 
-    def blur_iter_experiment(self, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", blur_box_size=5, preview=False):
+    def blur_iter_experiment(self, img_base_path, img_adversary_path, iter_max, hd_threshold=0.7, map_face_detection=False, blur_kernel="avg", init_blur_box_size=3, preview=False):
         import cv2 as cv
         import time
         import pandas as pd
 
         img_base = cv.imread(img_base_path)
         #img_adversary = cv.imread(img_adversary_path)
+        # The image will be copied further ahead
         img_adversary = img_base
 
         face_det = self.face_det
@@ -64,93 +69,84 @@ class BlurExperiments:
             img_base = self.image_resize(img_base, width=1280)
             img_adversary = self.image_resize(img_adversary, width=1280)
 
-        #hd_scores = []
-        #fm_scores = []
+        hd_scores_np = np.zeros([iter_max, 15], dtype=np.int8)
+        fm_scores_np = np.zeros([iter_max, 15], dtype="S20")
 
-        hd_scores_np = np.zeros(iter_max, dtype=np.int8)
-        fm_scores_np = np.zeros([iter_max, 2])
-
-        img_blurred = img_adversary.copy()
         #cv.imwrite('t.jpg', img_base)
         img_sizes = img_base.shape
 
         img_base_faces_box = face_det.extract_face(img_base)
         #img_adversary_faces_box = face_det.extract_face(img_adversary)
 
-        blur_box = (blur_box_size, blur_box_size)
-
         if blur_kernel == "resizing":
             iter_max = min(img_base.shape[0:2])
 
-        for i in range(0, iter_max):
+        blur_box_iteration = 0
 
-            start = time.time()
+        for box_size in range(init_blur_box_size, 32, 2):
 
-            if blur_kernel == "avg":
-                img_blurred = cv.blur(img_blurred, blur_box)
-            elif blur_kernel == "gaussian":
-                img_blurred = cv.GaussianBlur(img_blurred, blur_box, 0)
-            elif blur_kernel == "median":
-                img_blurred = cv.medianBlur(img_blurred, blur_box_size)
-            elif blur_kernel == "bilateralFiltering":
-                img_blurred = cv.bilateralFilter(img_blurred, blur_box_size, 75, 75)
-            elif blur_kernel == "resizing":
-                x_axis_size = int(img_sizes[1] - img_sizes[1] * (i+1)/100)
-                y_axis_size = int(img_sizes[0] - img_sizes[0] * (i+1)/100)
+            img_blurred = img_adversary.copy()
+            blur_box = (box_size, box_size)
 
-                if x_axis_size <= 40 or y_axis_size <= 40:
-                    break
+            start2 = time.time()
+            for iteration in range(0, iter_max):
 
-                img_temp = cv.resize(img_adversary, (x_axis_size, y_axis_size))
-                img_blurred = cv.resize(img_temp, (img_sizes[1], img_sizes[0]))
+                start = time.time()
 
-            end = time.time()
-            print("1 Blur with kernel {} time: {}".format(blur_kernel, end - start))
+                if blur_kernel == "avg":
+                    img_blurred = cv.blur(img_blurred, blur_box)
+                elif blur_kernel == "gaussian":
+                    img_blurred = cv.GaussianBlur(img_blurred, blur_box, 0)
+                elif blur_kernel == "median":
+                    img_blurred = cv.medianBlur(img_blurred, box_size)
+                elif blur_kernel == "bilateralFiltering":
+                    img_blurred = cv.bilateralFilter(img_blurred, box_size, 75, 75)
+                elif blur_kernel == "resizing":
+                    x_axis_size = int(img_sizes[1] - img_sizes[1] * (iteration+1)/100)
+                    y_axis_size = int(img_sizes[0] - img_sizes[0] * (iteration+1)/100)
 
-            boxes, scores, classes, humans_detected_map, num = human_det.process_frame(img_blurred, hd_threshold, 1)
-            #h_boxes, h_scores = human_det.get_detected_persons(boxes, scores, classes, hd_threshold)
+                    if x_axis_size <= 40 or y_axis_size <= 40:
+                        break
 
-            distance = face_det.compare_faces_cropped(img_base_faces_box, img_base_faces_box, img_base, img_blurred)
+                    img_temp = cv.resize(img_adversary, (x_axis_size, y_axis_size))
+                    img_blurred = cv.resize(img_temp, (img_sizes[1], img_sizes[0]))
 
-            if map_face_detection is 'y':
+                end = time.time() - start
+                print("Blur iteration {} with kernel {} time: {}".format(iteration, blur_kernel, end))
+
+                # ---- Applying classifiers over the image ----
+                h_boxes, h_scores, obj_map, num = human_det.process_frame(img_blurred, hd_threshold, 1)
+                distance = face_det.compare_faces_cropped(img_base_faces_box, img_base_faces_box, img_base, img_blurred)
+
+                # ---- Collecting Results ----
+                col_id = blur_box_iteration
+
                 detected_blurred_faces = face_det.extract_face(img_blurred)
-                fm_scores_np[i, 0] = distance
-                fm_scores_np[i, 1] = len(detected_blurred_faces) > 0
-                #fm_scores.append([distance, len(detected_blurred_faces) is not 0])
-                #print(fm_scores_np[i, :])
-            else:
-                fm_scores_np[i, 0] = distance
-                fm_scores_np[i, 1] = 0
-                #fm_scores.append([distance, distance])
-                #print(fm_scores_np[i, :])
+                fm_scores_np[iteration, col_id] = "{} {} {}".format(str(distance), len(img_base_faces_box), len(detected_blurred_faces))
+                hd_scores_np[iteration, col_id] = np.count_nonzero(obj_map)
 
-            hd_scores_np[i] = np.count_nonzero(humans_detected_map)
-            #print(hd_scores_np[i])
+                if preview is True:
+                    title = "Debugging Kernel:{} Box Size:{} Iteration:{}".format(blur_kernel, box_size, iteration)
+                    self.show_detections(img_blurred, h_boxes, img_base_faces_box, h_scores, obj_map, 0.5, title)
+                    key = cv.waitKey(1)
+                    if key & 0xFF == ord('q'):
+                        break
 
+            blur_box_iteration += 1
+            print("{}x{} box iteration total time: {}".format(box_size, box_size, time.time() - start2))
 
-            # if len(h_scores) > 0:
-            #     hd_scores.append(h_scores)
-            #     print(h_scores)
-            # else:
-            #     hd_scores.append([0])
-            #     print([0])
+        # ---- Combining Results ----
+        obj_headers = ['obj b{}x{}'.format(box, box) for box in range(init_blur_box_size, 32, 2)]
+        face_headers = ['face b{}x{}'.format(box, box) for box in range(init_blur_box_size, 32, 2)]
+        obj_dets_df = pd.DataFrame(data=hd_scores_np, columns=obj_headers)
+        face_dets_df = pd.DataFrame(data=fm_scores_np, columns=face_headers)
 
-            # blur_iterations.append(i)
+        total_df = pd.concat([face_dets_df, obj_dets_df], axis=1, sort=False)
 
-            if preview is True:
-                self.show_detections(img_blurred, boxes, img_base_faces_box, scores, classes, 0.5)
-                key = cv.waitKey(1)
-                if key & 0xFF == ord('q'):
-                    break
+        # print(face_dets_df)
+        # print(obj_dets_df)
+        # print(total_df)
 
-        df = pd.DataFrame({'f_score': fm_scores_np[:, 0], 'f_detection': fm_scores_np[:, 1], 'human_det:': hd_scores_np})
-
-        print(df)
-
-        # df3 = pd.DataFrame(np.array(hd_scores))
-        #
-        # full_df = pd.concat([df, df2, df3], axis=1)
-
-        return df
+        return total_df
 
 

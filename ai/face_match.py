@@ -42,7 +42,7 @@ class FaceMatch:
         bounding_boxes, _ = detect_face.detect_face(img, self.minsize, self.pnet, self.rnet, self.onet, self.threshold, self.factor)
         faces_boxes = np.zeros([len(bounding_boxes), 4], dtype=np.int16)
         boxes_nr = len(bounding_boxes)
-        if not boxes_nr == 0:
+        if boxes_nr:
             for idx in range(boxes_nr):
                 if bounding_boxes[idx, 4] > 0.50:
                     det = np.squeeze(bounding_boxes[idx, 0:4])
@@ -86,7 +86,7 @@ class FaceMatch:
                 #     plt.xticks([]), plt.yticks([])
                 #     plt.show()
 
-                    #faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': self.get_embedding(prewhiten)})
+                #faces.append({'face': resized, 'rect': [bb[0], bb[1], bb[2], bb[3]], 'embedding': self.get_embedding(prewhiten)})
 
                 embeddings.append({'face': resized, 'embedding': self.get_embedding(prewhiten)})
 
@@ -119,11 +119,11 @@ class FaceMatch:
 
     def compare_faces_cropped(self, boxes1, boxes2, img1, img2, debug_faces=False):
 
-        face1 = self.get_face_embeddings(boxes1, img1, debug_faces)
-        face2 = self.get_face_embeddings(boxes2, img2, debug_faces)
+        faces1_emb = self.get_face_embeddings(boxes1, img1, debug_faces)
+        faces2_emb = self.get_face_embeddings(boxes2, img2, debug_faces)
 
-        if face1 and face2:
-            dist = np.sqrt(np.sum(np.square(np.subtract(face1[0]['embedding'], face2[0]['embedding']))))
+        if faces1_emb and faces2_emb:
+            dist = np.sqrt(np.sum(np.square(np.subtract(faces1_emb[0]['embedding'], faces2_emb[0]['embedding']))))
             return dist
         else:
             return -1

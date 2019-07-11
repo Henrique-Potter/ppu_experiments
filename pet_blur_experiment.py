@@ -8,6 +8,8 @@ import argparse
 import time
 import os
 
+show_debug_window = False
+
 
 def process_image(image_name, image, args, experiment, results_path):
 
@@ -20,7 +22,7 @@ def process_image(image_name, image, args, experiment, results_path):
                                               args.hd_thres,
                                               args.mfd,
                                               args.blur_kernel,
-                                              args.blur_size, False)
+                                              args.blur_size, show_debug_window)
 
     end = time.time()
     print("Time elapsed: {} seconds".format(end - start))

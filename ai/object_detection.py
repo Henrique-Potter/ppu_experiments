@@ -39,8 +39,11 @@ class CocoDetectorAPI:
         image_np_expanded = np.expand_dims(image, axis=0)
 
         (res_boxes, res_scores, res_classes, res_num) = self.sess.run(
-            [self.detection_boxes, self.detection_scores, self.detection_classes, self.num_detections],
-            feed_dict={self.image_tensor: image_np_expanded})
+                                                        [self.detection_boxes,
+                                                         self.detection_scores,
+                                                         self.detection_classes,
+                                                         self.num_detections],
+                                                        feed_dict={self.image_tensor: image_np_expanded})
 
         im_height, im_width, _ = image.shape
         np_mask = np.array([im_height, im_width, im_height, im_width], dtype=np.int16)
@@ -49,10 +52,7 @@ class CocoDetectorAPI:
 
         objects_detected_map = np.logical_and(res_scores[0] > threshold, res_classes[0] == obj_class)
 
-        np_scores = np.take(res_scores[0], np.where(objects_detected_map))
-        np_classes = np.take(res_classes[0], np.where(objects_detected_map))
-
-        return res_boxes[0], np_scores, np_classes[0], res_num
+        return res_boxes[0], res_scores[0], objects_detected_map, res_num
 
     def close(self):
         self.sess.close()
@@ -73,5 +73,3 @@ class CocoDetectorAPI:
                 obj_scores.append(scores[i])
 
         return obj_boxes, obj_scores
-
-

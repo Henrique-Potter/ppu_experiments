@@ -1,248 +1,378 @@
 import pandas as pd
 import os
-import time
-import math
-from mpl_toolkits.mplot3d import axes3d
-import matplotlib.lines as mlines
 from pathlib import Path
 from pycocotools.coco import COCO
 import numpy as np
 from numpy import genfromtxt
 import matplotlib
-import matplotlib.pyplot as plt
-from ppu_plotter import *
-from tempfile import TemporaryFile
-
 matplotlib.use('TkAgg')
+from matplotlib import pyplot
+from scipy.interpolate import griddata
+from mpl_toolkits.mplot3d import Axes3D
+from ppu_plotter import *
 
 
 def unite_results_data(path_generator, total_df_cache, keyp_coco, use_cache=False):
 
-    total_data_df = np.zeros([25, 18])
+    if os.path.exists(total_df_cache+".pkl") and use_cache:
+        total_data_df = pd.read_pickle(str(total_df_cache+".pkl"))
+        return total_data_df
+
+    total_data_np = np.zeros([15, 150])
+    general_data_np = np.zeros([15, 1])
     face_distances_df = np.zeros([25, 5000])
     face_distances_index = 0
     outliers = []
 
+    gt_face_counter = 0
+    gtn_face_counter = 0
+
+    total_df_header = generate_headers()
+
     # Ensuring a high value in column 10 to find the min of embeddings distances
-    total_data_df[:, 9] = 10
+    # total_data_df[:, 9] = 10
 
-    face_counter = 0
-    tn_person_counter = 0
-    tn_face_counter = 0
+    for image_df_path in path_generator:
 
-    if os.path.exists(total_df_cache) and use_cache:
-        total_data_df = pd.read_pickle(total_df_cache).values
-        print(total_data_df)
-        face_counter = total_data_df[0, 7]
-        tn_person_counter = total_data_df[1, 7]
-        tn_face_counter = total_data_df[2, 7]
-    else:
+        # -- Load data for pickle file
+        image_data_df = pd.read_pickle(str(image_df_path))
+        image_df_name = os.path.basename(Path(image_df_path).resolve().stem)
+        print("Processing pickle file {}".format(image_df_name))
 
-        for image_df_path in path_generator:
-            image_data_df = pd.read_pickle(str(image_df_path))
+        # -- Finding ground truth for person classifier
+        name_components = image_df_name.split('_')
+        clean_image_id = name_components[0].lstrip('0')
 
-            image_df_name = os.path.basename(Path(image_df_path).resolve().stem)
-            print("Processing pickle file {}".format(image_df_name))
+        ann_ids = keyp_coco.getAnnIds(imgIds=int(clean_image_id), catIds=1, iscrowd=None)
+        gt_nr_plp = len(ann_ids)
 
-            name_components = image_df_name.split('_')
-            clean_image_id = name_components[0].lstrip('0')
+        # -- Preparing data
+        dfs = np.split(image_data_df, [15], axis=1)
+        face_df = dfs[0]
+        person_df = dfs[1]
+        img_all_boxes_data_np = None
 
-            ann_ids = keyp_coco.getAnnIds(imgIds=int(clean_image_id), catIds=1, iscrowd=None)
-            nr_plp = len(ann_ids)
-            total_data_df[3, 7] = total_data_df[3, 7] + nr_plp
-
-            #True negative persons
-            if nr_plp == 0:
-                tn_person_counter = tn_person_counter + 1
-
-            face_gt = 0
+        for column in range(15):
             ghost_detected = 0
 
-            for index, row in image_data_df.iterrows():
+            face_parcial_np = np.zeros([15, 7])
+            person_parcial_np = np.zeros([15, 3])
 
-                if index == 0:
-                    face_gt = row['f_score']
-                    if face_gt > 0 and nr_plp:
-                        face_counter = face_counter + 1
+            for row in range(15):
 
-                    if face_gt < 0 and nr_plp == 0:
-                        tn_face_counter = tn_face_counter + 1
+                f_values = face_df.iloc[row, column].decode().split(" ")
+                f_dist = float(f_values[0])
+                f_faces_tp = 0
+                f_faces_found = 0
 
-                if row['f_score'] != -1 and nr_plp:
-                    # Euclidean Distance Totals
-                    total_data_df[index, 0] = total_data_df[index, 0] + row['f_score']
-                    face_distances_df[index, face_distances_index] = row['f_score']
-                    total_data_df[index, 9] = row['f_score'] if total_data_df[index, 9] > row['f_score'] else total_data_df[index, 9]
+                try:
+                    f_faces_tp = int(f_values[1])
+                    f_faces_found = int(f_values[2])
+
+                except:
+                    pass
+
+                if row == 0 and f_faces_tp:
+                    gt_face_counter = gt_face_counter + 1
+                elif row == 0 and not f_faces_tp and not gt_nr_plp:
+                    gtn_face_counter = gtn_face_counter + 1
+
+                if f_faces_tp and gt_nr_plp:
+                    face_parcial_np[row, 0] = f_dist
 
                     # True positive faces
-                    if face_gt > 0 and row['f_detection'] > 0:
-                        total_data_df[index, 1] = total_data_df[index, 1] + 1
+                    if f_faces_found:
+                        face_parcial_np[row, 1] = f_faces_found
                         # True positive match
-                        if face_gt < 1.1:
-                            total_data_df[index, 10] = total_data_df[index, 10] + 1
+                        if f_dist < 1.1:
+                            face_parcial_np[row, 2] += 1
 
                     # False negative faces
-                    if (face_gt > 0 and row['f_detection'] == 0.0) or face_gt > 1.1:
-                        total_data_df[index, 2] = total_data_df[index, 2] + 1
+                    if f_faces_found < f_faces_tp:
+                        face_parcial_np[row, 3] += f_faces_tp - f_faces_found
 
-                # False positive faces
-                if (face_gt < 0 and row['f_detection'] == 1 and nr_plp == 0):
-                    total_data_df[index, 3] = total_data_df[index, 3] + 1
+                    # False negative match
+                    if not f_faces_found or f_dist > 1.1:
+                        face_parcial_np[row, 4] += 1
+                elif f_faces_found:
+                    # False positive faces
+                    face_parcial_np[row, 5] += 1
 
-                if nr_plp >= row['human_det:']:
+                # False positive match
+                if f_faces_tp == 0 and (f_faces_found or 0 < f_dist < 1.1) and gt_nr_plp == 0:
+                    face_parcial_np[row, 6] += 1
+
+                if gt_nr_plp >= person_df.iloc[row, column]:
                     # True positive persons 1
-                    total_data_df[index, 4] = total_data_df[index, 4] + row['human_det:']
+                    person_parcial_np[row, 0] += person_df.iloc[row, column]
                     # False negative persons
-                    total_data_df[index, 5] = total_data_df[index, 5] + nr_plp - row['human_det:']
+                    person_parcial_np[row, 1] += gt_nr_plp - person_df.iloc[row, column]
                 else:
                     # True positive persons 2
-                    total_data_df[index, 4] = total_data_df[index, 4] + nr_plp
+                    person_parcial_np[row, 0] += gt_nr_plp
                     # False positive persons
-                    total_data_df[index, 6] = total_data_df[index, 6] + row['human_det:'] - nr_plp
-                    ghost_detected = 1
+                    person_parcial_np[row, 2] += person_df.iloc[row, column] - gt_nr_plp
+                    ghost_detected += 1
 
-                # TP Occupancy
-                if nr_plp and row['human_det:']:
-                    total_data_df[index, 15] = total_data_df[index, 15] + 1
+            if img_all_boxes_data_np is None:
+                img_all_boxes_data_np = np.concatenate((face_parcial_np, person_parcial_np),
+                                                       axis=1)
+            else:
+                img_all_boxes_data_np = np.concatenate((img_all_boxes_data_np, face_parcial_np, person_parcial_np),
+                                                       axis=1)
 
-                # FP Occupancy
-                if nr_plp == 0 and row['human_det:']:
-                    total_data_df[index, 16] = total_data_df[index, 16] + 1
+        total_data_np = total_data_np + img_all_boxes_data_np
 
-                # FN Occupancy
-                if nr_plp and row['human_det:'] == 0:
-                    total_data_df[index, 17] = total_data_df[index, 17] + 1
+    general_data_np[0] = gt_face_counter // 15
+    general_data_np[1] = gtn_face_counter // 15
 
-                # Attacker and User Succeeds
-                if (0 < row['f_score'] < 1.1 and face_gt > 0 and row['f_detection'] > 0.0) and nr_plp == row['human_det:'] and row['human_det:'] > 0:
-                    total_data_df[index, 11] = total_data_df[index, 11] + 1
-                # Attacker Succeeds and User Fails
-                if 0 < row['f_score'] < 1.1 and face_gt > 0 and row['f_detection'] > 0.0 and nr_plp != row['human_det:']:
-                    total_data_df[index, 12] = total_data_df[index, 12] + 1
-                # Attacker Fails and User Succeeds
-                if (row['f_score'] > 1.1 or row['f_detection'] == 0.0) and face_gt > 0 and nr_plp == row['human_det:'] and row['human_det:'] > 0:
-                    total_data_df[index, 13] = total_data_df[index, 13] + 1
-                # Attacker Fails and User Fails
-                if (row['f_score'] > 1.1 or row['f_detection'] == 0.0) and face_gt > 0 and nr_plp != row['human_det:']:
-                    total_data_df[index, 14] = total_data_df[index, 14] + 1
+    total_data_np = np.concatenate((general_data_np,
+                                    total_data_np),
+                                   axis=1)
 
-            if 0 < image_data_df['f_score'][24] < 0.75 and nr_plp:
-                outliers.append(clean_image_id)
+    # #Adding standard deviation. This will be empty when the data is loaded from the cache
+    # clean_data = np.delete(face_distances_df, np.where(~face_distances_df.any(axis=0))[0], axis=1)
+    # if clean_data.shape[1] != 0:
+    #     total_data_df[:, 8] = np.std(clean_data, axis=1)
 
-            face_distances_index = face_distances_index + 1
-            if ghost_detected:
-                total_data_df[4, 7] = total_data_df[4, 7] + 1
+    total_df_header = ['General Info'] + total_df_header
+    total_data_df = pd.DataFrame(data=total_data_np, columns=total_df_header)
+    # pd.DataFrame(clean_data).to_excel(total_df_cache+"_all_distances.xlsx")
+    total_data_df.to_pickle(total_df_cache+".pkl")
+    total_data_df.to_excel(total_df_cache+".xlsx")
 
-    total_data_df[0, 7] = face_counter
-    total_data_df[1, 7] = tn_person_counter
-    total_data_df[2, 7] = tn_face_counter
-
-    #Adding standard deviation. This will be empty when the data is loaded from the cache
-    clean_data = np.delete(face_distances_df, np.where(~face_distances_df.any(axis=0))[0], axis=1)
-    if clean_data.shape[1] != 0:
-        total_data_df[:, 8] = np.std(clean_data, axis=1)
-
-    c = ['Distance', 'F TP', 'F FN', 'F FP', 'H TP', 'H FN', 'H FP', 'Aux', 'Std', 'Min Distances', 'FM TP', 'US AS', 'UF AS', 'US AF', 'UF AF', 'TP Occupancy', 'FP Occupancy', 'FN Occupancy']
-    temp_df = pd.DataFrame(data=total_data_df, columns=c)
-    pd.DataFrame(clean_data).to_excel(total_df_cache+"_all_distances.xlsx")
-    temp_df.to_pickle(total_df_cache+ ".pkl")
-    temp_df.to_excel(total_df_cache+".xlsx")
-
-    print(outliers)
-
-    print(temp_df)
+    print(total_data_df)
 
     return total_data_df
 
 
-def generate_plots(df_data, energy_traces, x_label):
+def generate_headers():
 
-    fd_embeddings_distance = df_data[:, 0] / df_data[0, 7]
-    fd_embeddings_std = df_data[:, 8]
+    faces_dt_h = ['{}x{} Dist',
+                  '{}x{} Face TP',
+                  '{}x{} Face TM',
+                  '{}x{} Face FN',
+                  '{}x{} Face FNM',
+                  '{}x{} Face FP',
+                  '{}x{} Face FPM']
 
-    fd_precision = df_data[:, 1] / (df_data[:, 1] + df_data[:, 3])
-    fd_recall = df_data[:, 1] / (df_data[:, 1] + df_data[:, 2])
-    fd_truth_recall = df_data[:, 10] / (df_data[:, 10] + df_data[:, 1])
-    fd_f1_measure = (2 * fd_precision * fd_recall) / (fd_precision + fd_recall)
-    fd_fpr = df_data[:, 3] / (df_data[2, 7] + df_data[:, 3])
+    persons_dt_h = ['{}x{} Person TP', '{}x{} Person FN', '{}x{} Person FP']
+    final_header = []
 
-    hd_precision = df_data[:, 4] / (df_data[:, 4] + df_data[:, 6])
-    hd_recall = df_data[:, 4] / (df_data[:, 4] + df_data[:, 5])
-    hd_f1_measure = (2 * hd_precision * hd_recall) / (hd_precision + hd_recall)
-    hd_fpr = df_data[:, 6] / (df_data[1, 7] + df_data[:, 6])
+    for box_size in range(3, 32, 2):
+        l1 = []
+        l2 = []
+        for fh in faces_dt_h:
+            l1.append(fh.format(box_size, box_size))
+        for ph in persons_dt_h:
+            l2.append(ph.format(box_size, box_size))
 
-    af_us_from_user_s_rate = df_data[:, 13] / (df_data[:, 11] + df_data[:, 13])
-    us_af_from_a_fails_rate = df_data[:, 13] / (df_data[:, 14] + df_data[:, 13])
-    as_uf_rate = df_data[:, 12] / (df_data[:, 11] + df_data[:, 12])
+        final_header += l1
+        final_header += l2
 
-
-    x_holder = [i for i in range(1, len(fd_embeddings_distance)+1)]
-    y_cut = [1.1 for i in range(1, len(fd_embeddings_distance)+1)]
-
-    plot_face_embeddings_data(df_data, energy_traces, fd_embeddings_distance, fd_embeddings_std, x_holder, x_label,
-                              y_cut)
-
-    general_plot(energy_traces, fd_f1_measure, fd_fpr, fd_precision, fd_recall, fd_truth_recall, hd_f1_measure, hd_fpr, hd_precision, hd_recall,
-                 x_holder, x_label)
-
-    roc_plot(energy_traces, fd_fpr, fd_recall, hd_fpr, hd_recall, x_holder, x_label)
-
-    raw_attack_rate_metric(af_us_from_user_s_rate, as_uf_rate, energy_traces, us_af_from_a_fails_rate, x_holder,
-                           x_label)
+    return final_header
 
 
-ins_annFile = './coco_annotations_db/instances_val2017.json'
-key_points_annFile = './coco_annotations_db/person_keypoints2017.json'
+def calculate_f1_matrix(total_gaussian_df):
+    fm_f1_data = np.zeros([15, 15])
+    hd_f1_data = np.zeros([15, 15])
+    dist_data = np.zeros([15, 15])
+    total_faces = total_gaussian_df.iloc[0, 0]
+    row_count = 0
+    for row in total_gaussian_df.iterrows():
+        temp = 3
+        for i in range(15):
+            # Skip 10 by 10 columns to get the correct TP/FP/FN
+            index_fix = i * 10
 
-#Loading coco labels
-coco_true_labels = COCO(ins_annFile)
+            print(index_fix)
+            fm_precision = row[1][2 + index_fix] / (row[1][2 + index_fix] + row[1][6 + index_fix])
+            pd_precision = row[1][8 + index_fix] / (row[1][8 + index_fix] + row[1][10 + index_fix])
+            fm_recall = row[1][2 + index_fix] / (row[1][2 + index_fix] + row[1][4 + index_fix])
+            pd_recall = row[1][8 + index_fix] / (row[1][8 + index_fix] + row[1][9 + index_fix])
 
-df_avg_pickles_paths = Path('F:/results').glob("*_avg_data.pkl")
-df_gaussian_pickles_paths = Path('F:/results').glob("*_gaussian_data.pkl")
-df_median_pickles_paths = Path('F:/results').glob("*_median_data.pkl")
-df_bilateral_pickles_paths = Path('F:/results').glob("*_bilateralFiltering_data.pkl")
+            fm_f1 = 2 * (fm_precision * fm_recall) / (fm_precision + fm_recall)
+            pd_f1 = 2 * (pd_precision * pd_recall) / (pd_precision + pd_recall)
 
-full_avg_cache = 'F:/results/full_avg_results'
-full_gau_cache = 'F:/results/full_gaussian_results'
-full_med_cache = 'F:/results/full_med_results'
-full_bila_cache = 'F:/results/full_bila_results'
+            # Skip 2 columns to add face match and person F1 in the same matrix
+            fm_f1_data[row_count, i] = fm_f1
+            hd_f1_data[row_count, i] = pd_f1
+            # Distance
+            dist_data[row_count, i] = row[1][1 + index_fix] / total_faces
 
-avg_time_trace = genfromtxt('./power_traces/blur_times_avg_box.csv', delimiter=',')
-gaussian_time_trace = genfromtxt('./power_traces/blur_times_gaussian_box.csv', delimiter=',')
-bilateral_time_trace = genfromtxt('./power_traces/blur_times_bilateral_box.csv', delimiter=',')
-median_time_trace = genfromtxt('./power_traces/blur_times_median_box.csv', delimiter=',')
+        row_count += 1
 
-avg_energy_trace = (avg_time_trace/100) * 5.16 * 0.460
-gaussian_energy_trace = (gaussian_time_trace/100) * 5.16 * 0.760
-bilateral_energy_trace = (bilateral_time_trace/100) * 5.16 * 0.742
-median_energy_trace = (median_time_trace/100) * 5.16 * 0.460
-
-avg_energy = [avg_energy_trace[2] * i for i in range(1, 25 + 1)]
-gaussian_energy = [gaussian_energy_trace[2] * i for i in range(1, 25 + 1)]
-bilateral_energy = [bilateral_energy_trace[2] * i for i in range(1, 25 + 1)]
-median_energy = [median_energy_trace[2] * i for i in range(1, 25 + 1)]
-
-#Generating totals and charts
-#total_avg_df = unite_results_data(df_avg_pickles_paths, full_avg_cache, coco_true_labels, False)
-#generate_plots(total_avg_df, avg_energy, 'Iterations of AVG Blur')
-
-#total_gaussian_df = unite_results_data(df_gaussian_pickles_paths, full_gau_cache, coco_true_labels, False)
-#generate_plots(total_gaussian_df, gaussian_energy, 'Iterations of Gaussian Blur')
-
-total_med_df = unite_results_data(df_median_pickles_paths, full_med_cache, coco_true_labels, False)
-#generate_plots(total_med_df, bilateral_energy, 'Iterations of Median Blur')
-
-total_bila_df = unite_results_data(df_bilateral_pickles_paths, full_bila_cache, coco_true_labels, False)
-#generate_plots(total_bila_df, median_energy, 'Iterations of Bilateral Filter Blur')
+    return np.nan_to_num(fm_f1_data), np.nan_to_num(hd_f1_data), dist_data
 
 
-#ax = plt.axes(projection='3d')
-# s = ax.scatter3D(total_avg_data_df.iloc[:, 0], total_avg_data_df.iloc[:, 2], power, c=power, cmap='Greens')
-#
-# #ax.plot_trisurf(fm_scores, hd_scores, power, cmap='viridis', edgecolor='none', label='PPU Plane')
-# ax.set_title('Power x Privacy x Utility')
-#
-# ax.set_xlabel('Privacy', fontsize=20)
-# ax.set_ylabel('Utility', fontsize=20)
-# ax.set_zlabel('Power', fontsize=20)
+def normalize(x):
+    x = np.asarray(x)
+    return (x - x.min()) / (np.ptp(x))
 
+
+def regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data):
+
+    from matplotlib import cm
+    import statsmodels.api as sm
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
+
+    iterations = np.linspace(1, 15, num=15)
+    boxes = np.linspace(1, 15, num=15)
+    iterations_gmesh, boxes_gmesh = np.meshgrid(iterations, boxes)
+
+    flat_data = np.zeros([225, 4])
+    count = 0
+
+    for i in range(15):
+        for j in range(15):
+            flat_data[count, 0] = iterations_gmesh[i, j]
+            flat_data[count, 1] = boxes_gmesh[i, j]
+            flat_data[count, 2] = fm_f1_data[i, j]
+            flat_data[count, 3] = hd_f1_data[i, j]
+            count += 1
+
+    features = flat_data[:, 0:2]
+    poly_feats = PolynomialFeatures(degree=11)
+    features_poly = poly_feats.fit_transform(features)
+
+    I = flat_data[:, 0]
+    B = flat_data[:, 1]
+    face_f1 = flat_data[:, 2]
+    hd_f1 = flat_data[:, 3]
+
+    # reg = LinearRegression().fit(S_opt, f1)
+    # c, _, _, _ = np.linalg.lstsq(S_opt, f1)
+    fc_regressor_OLS = sm.OLS(face_f1, features_poly).fit()
+    hd_regressor_OLS = sm.OLS(hd_f1, features_poly).fit()
+
+    print(fc_regressor_OLS.summary())
+    print(hd_regressor_OLS.summary())
+
+    # Coefficients times polynomial features (e.g., temp = np.dot(S_opt, regressor_OLS.params) )
+    fc_zp = fc_regressor_OLS.predict(features_poly)
+    hd_zp = hd_regressor_OLS.predict(features_poly)
+
+    # Mapping input space
+    x_values_range = np.linspace(min(flat_data[:, 0]), max(flat_data[:, 0]), 15)
+    y_values_range = np.linspace(min(flat_data[:, 1]), max(flat_data[:, 1]), 15)
+    #power_values_range = np.linspace(min(avg_time_trace[:15]), max(avg_time_trace[:15]))
+
+    heat_map = np.linspace(min(flat_data[:, 1]), max(flat_data[:, 1]))
+
+    # Creating input space grid for plotting (Combining all possible x and y inputs)
+    x_axis_map, y_axis_map = np.meshgrid(x_values_range, y_values_range)
+
+    # Mapping to grid values in Z
+    fc_outputs = griddata(flat_data[:, 0:2], fc_zp, (x_axis_map, y_axis_map), method='linear')
+    hd_outputs = griddata(flat_data[:, 0:2], hd_zp, (x_axis_map, y_axis_map), method='linear')
+
+    fig = pyplot.figure()
+    ax = Axes3D(fig)
+
+    heat_map = normalize(y_axis_map*avg_time_trace[:15])
+    surf = ax.plot_surface(x_axis_map, y_axis_map, fc_outputs, facecolors=cm.Reds(heat_map.transpose()), antialiased=True)
+    surf = ax.plot_wireframe(x_axis_map, y_axis_map, hd_outputs, antialiased=True)
+    surf = ax.plot_wireframe(x_axis_map, y_axis_map, dist_data, color='red', antialiased=True)
+
+    #ax.contour(x_axis_map, y_axis_map, abs(fc_outputs - hd_outputs))
+
+    #ax.scatter(I, B, face_f1)
+    ax.set_zlim3d(-0.2, 1.2)
+    colorscale = cm.ScalarMappable(cmap=cm.Reds)
+    colorscale.set_array(face_f1)
+    fig.colorbar(colorscale, shrink=0.7)
+
+    ax.set_title('Iteration x Box Size x F1')
+    yticks_text = ['{}x{}'.format(i, i) for i in range(3, 33, 2)]
+    xticks_text = [i for i in range(1, 16)]
+
+    ax.set_xlabel('Iteration', fontsize=15, labelpad=10)
+    ax.set_xticks(iterations)
+    ax.set_xticklabels(xticks_text)
+
+    ax.set_ylabel('Box Size', fontsize=15, labelpad=25)
+    ax.set_yticks(iterations)
+    ax.set_yticklabels(yticks_text, rotation=45)
+
+    ax.set_zlabel('F1(Precision/Recall)', fontsize=15)
+
+    pyplot.show()
+
+
+def plot_3d(fm_f1_data, hd_f1_data, avg_time_trace):
+
+    from matplotlib import cm
+
+    ax = plt.axes(projection='3d')
+
+    iterations = np.linspace(1, 15, num=15)
+    boxes = np.linspace(1, 15, num=15)
+    X, Y = np.meshgrid(iterations, boxes)
+
+    heat_map = normalize(Y*avg_time_trace[:15])
+
+    s = ax.plot_surface(X, Y, fm_f1_data, facecolors=cm.Reds(heat_map.transpose()), alpha=0.9)
+    cset = ax.contour(X, Y, fm_f1_data, zdir='z', offset=0)
+    # cset = ax.contour(X, Y, fm_f1_data, zdir='x', offset=0)
+    # cset = ax.contour(X, Y, fm_f1_data, zdir='y', offset=0)
+
+    s2 = ax.plot_surface(X, Y, hd_f1_data, facecolors=cm.Oranges(heat_map.transpose()), alpha=0.8)
+
+    ax.set_title('Iteration x Box Size x F1')
+    yticks_text = ['{}x{}'.format(i, i) for i in range(3, 33, 2)]
+    xticks_text = [i for i in range(1, 16)]
+
+    ax.set_xlabel('Iteration', fontsize=15, labelpad=10)
+    ax.set_xticks(iterations)
+    ax.set_xticklabels(xticks_text)
+
+    ax.set_ylabel('Box Size', fontsize=15, labelpad=25)
+    ax.set_yticks(iterations)
+    ax.set_yticklabels(yticks_text, rotation=45)
+
+    ax.set_zlabel('F1(Precision/Recall)', fontsize=15)
+
+    plt.show()
+    pass
+
+
+def process_pickles():
+
+    ins_annFile = './coco_annotations_db/instances_val2017.json'
+    key_points_annFile = './coco_annotations_db/person_keypoints2017.json'
+    # Loading coco labels
+    coco_true_labels = COCO(ins_annFile)
+    df_avg_pickles_paths = Path('F:/results').glob("*_avg_data.pkl")
+
+    df_gaussian_pickles_paths = Path('F:/results').glob("*_gaussian_data.pkl")
+    df_median_pickles_paths = Path('F:/results').glob("*_median_data.pkl")
+    df_bilateral_pickles_paths = Path('F:/results').glob("*_bilateralFiltering_data.pkl")
+
+    full_avg_cache = 'F:/results/full_avg_results'
+    f1_fc_avg_cache = 'F:/results/f1_fc_avg_results'
+    hd_fc_avg_cache = 'F:/results/f1_hd_avg_results'
+    full_gau_cache = 'F:/results/full_gaussian_results'
+    full_med_cache = 'F:/results/full_med_results'
+    full_bila_cache = 'F:/results/full_bila_results'
+
+    avg_time_trace = genfromtxt('./power_traces/blur_times_avg_box.csv', delimiter=',')
+    gaussian_time_trace = genfromtxt('./power_traces/blur_times_gaussian_box.csv', delimiter=',')
+    bilateral_time_trace = genfromtxt('./power_traces/blur_times_bilateral_box.csv', delimiter=',')
+    median_time_trace = genfromtxt('./power_traces/blur_times_median_box.csv', delimiter=',')
+
+    # Generating totals and charts
+    total_gaussian_df = unite_results_data(df_avg_pickles_paths, full_avg_cache, coco_true_labels, True)
+
+    fm_f1_data, hd_f1_data, dist_data = calculate_f1_matrix(total_gaussian_df)
+
+    pd.DataFrame(fm_f1_data).to_excel(f1_fc_avg_cache+".xlsx")
+    pd.DataFrame(hd_f1_data).to_excel(hd_fc_avg_cache+".xlsx")
+    pd.DataFrame(dist_data).to_excel(hd_fc_avg_cache + "dist.xlsx")
+
+    regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
+
+
+if __name__ == "__main__":
+    process_pickles()
+    pass
