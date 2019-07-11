@@ -19,7 +19,7 @@ beep_pin = 40
 g_led_pin = 36
 r_led_pin = 38
 
-trigger_performance_data = np.zeros([1, 2])
+trigger_performance_data = np.zeros([1, 3])
 
 if platform.uname()[1] == 'raspberrypi':
     import RPi.GPIO as GPIO
@@ -168,8 +168,58 @@ class PiFaceDet:
 
         return new_name
 
-    def continuous_face_identification(self, process_queue):
+    def continuous_face_detection(self, process_queue):
 
+        last_detection_time = time.time()
+        last_trigger_time = time.time()
+        face_det_flag = False
+        msg_code = 0
+
+        vs = self.get_cam()
+        time.sleep(2.0)
+
+        while True:
+
+            if not process_queue.empty():
+                msg_code = process_queue.get()
+                if msg_code == 1:
+                    last_trigger_time = time.time()
+            else:
+                msg_code = None
+
+            frame = vs.read()
+
+            start1 = time.time()
+            face_found, faces_boxes = self.detect_face(frame)
+
+            if face_found:
+                last_detection_time = time.time()
+                face_det_flag = True
+                self.beep_blink(1, g_led_pin, 0.3)
+                print("Time to detect face: {}".format(time.time() - start1))
+
+            det_elapsed = abs(last_detection_time - last_trigger_time)
+
+            if msg_code == 1:
+                if det_elapsed <= 3:
+                    trigger_performance_data[0, 0] += 1
+                    face_det_flag = False
+                    print('Trigger Successful! Count: {}'.format(trigger_performance_data[0, 0]))
+                    print('Time elapsed since last detection: {}'.format(det_elapsed))
+                else:
+                    face_det_flag = False
+                    trigger_performance_data[0, 1] += 1
+                    print('Trigger is Late! Count: {}'.format(trigger_performance_data[0, 1]))
+                    print('Time elapsed since last detection: {}'.format(det_elapsed))
+
+            if 3 < det_elapsed and face_det_flag:
+                trigger_performance_data[0, 2] += 1
+                face_det_flag = False
+                print('Trigger missed a detection! Count: {}'.format(trigger_performance_data[0, 2]))
+                print('Time elapsed since last detection: {}'.format(det_elapsed))
+                time.sleep(5)
+
+    def continuous_face_identification(self, process_queue):
         last_detection_time = 0
 
         vs = self.get_cam()
@@ -192,21 +242,20 @@ class PiFaceDet:
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
-            #print("Time to detect face: {}".format(time.time() - start1))
 
             if face_found and msg_code is None:
-                last_detection_time = time.time()
                 self.beep_blink(1, g_led_pin, 0.1)
+                print("Time to detect face: {}".format(time.time() - start1))
 
                 start2 = time.time()
                 frame_face_data = self.face_det.get_face_embeddings(faces_boxes, frame)
-                #print("Time to extract embeddings: {}".format(time.time() - start2))
+                print("Time to extract embeddings: {}".format(time.time() - start2))
 
                 frame_face_emb = frame_face_data[0]['embedding']
 
                 start3 = time.time()
                 most_similar_name, most_similar_emb, match_map = self.find_face(frame_face_emb)
-                #print("Time to find face in DB: {}".format(time.time() - start3))
+                print("Time to find face in DB: {}".format(time.time() - start3))
 
                 if most_similar_name:
                     print("Authorization for {} confirmed".format(most_similar_name))
@@ -230,8 +279,6 @@ class PiFaceDet:
                 if state_changed:
                     self.save_db_state()
 
-            self.evaluate_trigger(last_detection_time, msg_code)
-
             if self.preview:
                 img = self.show_detections(frame, faces_boxes)
                 key = cv.waitKey(1)
@@ -248,19 +295,6 @@ class PiFaceDet:
         cv.destroyAllWindows()
         vs.stop()
         time.sleep(2.0)
-
-    @staticmethod
-    def evaluate_trigger(last_detection_time, msg_code):
-        det_elapsed = time.time() - last_detection_time
-        if msg_code == 1 and det_elapsed <= 3:
-            trigger_performance_data[0, 0] += 1
-            print('Trigger Successful! Count: {}'.format(trigger_performance_data[0, 0]))
-            print('Time elapsed since last detection: {}'.format(det_elapsed))
-
-        elif msg_code == 1 and det_elapsed > 3:
-            trigger_performance_data[0, 1] += 1
-            print('Trigger Failed! Count: {}'.format(trigger_performance_data[0, 1]))
-            print('Time elapsed since last detection: {}'.format(det_elapsed))
 
     def detect_face(self, frame):
         face_boxes = self.face_det.extract_face(frame)
