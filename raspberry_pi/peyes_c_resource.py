@@ -35,11 +35,11 @@ class PeyesC(Resource):
         self.max_age = 60
 
     def render_GET(self, request):
-        print("[INFO] starting process...")
 
         global continuous_server
 
         if not continuous_server:
+            print("[INFO] Get request received, starting Video Thread...")
             self.beep_blink(3, r_led_pin, 0.5)
             p = Process(target=start_face_det, args=(inputQueue,))
             p.daemon = True
@@ -47,6 +47,7 @@ class PeyesC(Resource):
             continuous_server = True
             self.payload = "ID process started Successfully!"
         else:
+            print("[INFO] Get request received as trigger...")
             self.beep_blink(1, g_led_pin, 0.2)
             inputQueue.put(1)
             self.payload = "Trigger Sensor sent a get request!"
@@ -84,7 +85,8 @@ class PeyesC(Resource):
     def beep_blink(blink_times, led_pin, duration=0.3):
         import RPi.GPIO as GPIO
         import time
-
+        print(platform.uname())
+        print(platform.uname()[1] == 'raspberrypi')
         if platform.uname()[1] == 'raspberrypi':
             for i in range(blink_times):
                 GPIO.output(beep_pin, GPIO.HIGH)
