@@ -203,7 +203,7 @@ class PiFaceDet:
                 tm_counter = tm_counter - 1
                 time.sleep(5)
 
-            if tm_counter < 10:
+            if tm_counter < 1:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
                     total_data_df.to_excel("trigger_metrics.xlsx")
