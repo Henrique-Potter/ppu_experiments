@@ -178,15 +178,15 @@ class PiFaceDet:
         vs = self.get_cam()
         time.sleep(2.0)
 
-        tm_counter = 0
+        tm_counter = 10
 
         while True:
 
             if not process_queue.empty():
                 trigger_time_stamp = process_queue.get()
                 self.trigger_metrics_list.append([0, trigger_time_stamp])
-                tm_counter = tm_counter + 1
-                print('[INFO] Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, tm_counter))
+                tm_counter = tm_counter - 1
+                print('[INFO - TRIG] Get received at:{} \n       Save deadline:{}'.format(trigger_time_stamp, tm_counter))
 
             frame = vs.read()
             frame = cv.flip(frame, 0)
@@ -197,19 +197,19 @@ class PiFaceDet:
             if face_found:
                 self.beep_blink(1, g_led_pin, 0.5)
                 time_stamp = time.time()
-                self.trigger_metrics_list.append([1, ])
-                print('[INFO] Get received at:{} \nSave deadline:{}'.format(time_stamp, tm_counter))
-                print('[INFO] Time to detect face: {}'.format(time.time() - start1))
-                tm_counter = tm_counter + 1
+                self.trigger_metrics_list.append([1, time_stamp])
+                print('[INFO - CAM] Get received at:{} \n       Save deadline:{}'.format(time_stamp, tm_counter))
+                print('[INFO - CAM] Time to detect face: {}'.format(time.time() - start1))
+                tm_counter = tm_counter - 1
                 time.sleep(5)
 
-            if tm_counter > 10:
+            if tm_counter < 10:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
                     total_data_df.to_excel("trigger_metrics.xlsx")
                 except Exception as e:
                     print(e)
-                    tm_counter = 0
+                tm_counter = 10
                 print('[INFO] Saving trigger metrics.')
                 print(total_data_df)
 
