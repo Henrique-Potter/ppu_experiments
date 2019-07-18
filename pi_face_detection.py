@@ -50,8 +50,8 @@ class PiFaceDet:
         self.preview = preview
         self.face_counter = 0
 
-        if os.path.exists("trigger_metrics.xlsx"):
-            self.trigger_metrics_list = pd.read_pickle(str("trigger_metrics.xlsx")).values.tolist()
+        if os.path.exists("trigger_metrics.csv"):
+            self.trigger_metrics_list = pd.read_pickle(str("trigger_metrics.csv")).values.tolist()
         else:
             self.trigger_metrics_list = []
 
@@ -172,7 +172,7 @@ class PiFaceDet:
 
         return new_name
 
-    # TODO change to post processing
+    # Used for measuring the accuracy of range sensor triggers
     def continuous_face_detection(self, process_queue):
 
         vs = self.get_cam()
@@ -206,7 +206,7 @@ class PiFaceDet:
             if tm_counter < 1:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
-                    total_data_df.to_excel("trigger_metrics.xlsx")
+                    total_data_df.to_csv("trigger_metrics.csv")
                 except Exception as e:
                     print(e)
                 tm_counter = 10

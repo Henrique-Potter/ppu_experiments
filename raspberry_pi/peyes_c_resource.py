@@ -40,12 +40,13 @@ class PeyesC(Resource):
         global continuous_server
 
         if not continuous_server:
+            continuous_server = True
             print("[INFO] Get request received, starting Video Thread....")
             self.beep_blink(3, r_led_pin, 0.5)
             p = Process(target=start_face_det, args=(inputQueue,))
             p.daemon = True
             p.start()
-            continuous_server = True
+
             self.payload = "ID process started Successfully!"
         else:
             print("[INFO] Get request received as trigger...")
