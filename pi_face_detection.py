@@ -186,7 +186,7 @@ class PiFaceDet:
                 trigger_time_stamp = process_queue.get()
                 self.trigger_metrics_list.append([0, trigger_time_stamp])
                 tm_counter = tm_counter + 1
-                print('[INFO] Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, save_trigger_metrics_counter))
+                print('[INFO] Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, tm_counter))
 
             frame = vs.read()
             frame = cv.flip(frame, 0)
@@ -198,7 +198,7 @@ class PiFaceDet:
                 self.beep_blink(1, g_led_pin, 0.5)
                 time_stamp = time.time()
                 self.trigger_metrics_list.append([1, ])
-                print('[INFO] Get received at:{} \nSave deadline:{}'.format(time_stamp, save_trigger_metrics_counter))
+                print('[INFO] Get received at:{} \nSave deadline:{}'.format(time_stamp, tm_counter))
                 print('[INFO] Time to detect face: {}'.format(time.time() - start1))
                 tm_counter = tm_counter + 1
                 time.sleep(5)
