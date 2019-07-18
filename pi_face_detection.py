@@ -186,7 +186,7 @@ class PiFaceDet:
                 trigger_time_stamp = process_queue.get()
                 self.trigger_metrics_list.append([0, trigger_time_stamp])
                 save_trigger_metrics_counter += 1
-                print('Get received at:{} \n Save deadline:{}'.format(trigger_time_stamp, save_trigger_metrics_counter))
+                print('Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, save_trigger_metrics_counter))
 
             frame = vs.read()
             frame = cv.flip(frame, 0)
@@ -198,14 +198,17 @@ class PiFaceDet:
                 self.beep_blink(1, g_led_pin, 0.3)
                 time_stamp = time.time()
                 self.trigger_metrics_list.append([1, ])
-                print('Get received at:{} \n Save deadline:{}'.format(time_stamp, save_trigger_metrics_counter))
+                print('Get received at:{} \nSave deadline:{}'.format(time_stamp, save_trigger_metrics_counter))
                 print("Time to detect face: {}".format(time.time() - start1))
                 save_trigger_metrics_counter += 1
                 time.sleep(5)
 
             if save_trigger_metrics_counter == 10:
-                total_data_df = pd.DataFrame(data=self.trigger_metrics_list, columns=['TP', 'FP', 'FN'])
-                total_data_df.to_excel("trigger_metrics.xlsx")
+                total_data_df = pd.DataFrame(self.trigger_metrics_list)
+                try:
+                    total_data_df.to_excel("trigger_metrics.xlsx")
+                except Exception as e:
+                    print(e)
                 save_trigger_metrics_counter = 0
                 print('Saving trigger metrics.')
                 print(total_data_df)
