@@ -178,15 +178,15 @@ class PiFaceDet:
         vs = self.get_cam()
         time.sleep(2.0)
 
-        save_trigger_metrics_counter = 0
+        tm_counter = 0
 
         while True:
 
             if not process_queue.empty():
                 trigger_time_stamp = process_queue.get()
                 self.trigger_metrics_list.append([0, trigger_time_stamp])
-                save_trigger_metrics_counter += 1
-                print('Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, save_trigger_metrics_counter))
+                tm_counter = tm_counter + 1
+                print('[INFO] Get received at:{} \nSave deadline:{}'.format(trigger_time_stamp, save_trigger_metrics_counter))
 
             frame = vs.read()
             frame = cv.flip(frame, 0)
@@ -195,22 +195,22 @@ class PiFaceDet:
             face_found, faces_boxes = self.detect_face(frame)
 
             if face_found:
-                self.beep_blink(1, g_led_pin, 0.3)
+                self.beep_blink(1, g_led_pin, 0.5)
                 time_stamp = time.time()
                 self.trigger_metrics_list.append([1, ])
-                print('Get received at:{} \nSave deadline:{}'.format(time_stamp, save_trigger_metrics_counter))
-                print("Time to detect face: {}".format(time.time() - start1))
-                save_trigger_metrics_counter += 1
+                print('[INFO] Get received at:{} \nSave deadline:{}'.format(time_stamp, save_trigger_metrics_counter))
+                print('[INFO] Time to detect face: {}'.format(time.time() - start1))
+                tm_counter = tm_counter + 1
                 time.sleep(5)
 
-            if save_trigger_metrics_counter == 10:
+            if save_trigger_metrics_counter > 10:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
                     total_data_df.to_excel("trigger_metrics.xlsx")
                 except Exception as e:
                     print(e)
                 save_trigger_metrics_counter = 0
-                print('Saving trigger metrics.')
+                print('[INFO] Saving trigger metrics.')
                 print(total_data_df)
 
     def continuous_face_identification(self, process_queue):

@@ -49,7 +49,7 @@ class PeyesC(Resource):
             self.payload = "ID process started Successfully!"
         else:
             print("[INFO] Get request received as trigger...")
-            self.beep_blink(1, g_led_pin, 0.2)
+            self.beep_blink(2, g_led_pin, 0.1)
             inputQueue.put(time.time())
             self.payload = "Trigger Sensor sent a get request!"
             self.payload = "Continuous ID process is already ON!"
