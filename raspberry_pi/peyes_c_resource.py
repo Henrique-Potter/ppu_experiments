@@ -6,6 +6,7 @@ from multiprocessing import Process
 from pi_face_detection import PiFaceDet
 from threading import Lock
 import platform
+import time
 
 peyes_lock = Lock()
 inputQueue = Queue(maxsize=5)
@@ -31,7 +32,7 @@ class PeyesC(Resource):
                                      observable=True,
                                      allow_children=True)
 
-        self.payload = "Peyes Continous Identification"
+        self.payload = "Peyes Continuous Identification"
         self.max_age = 60
 
     def render_GET(self, request):
@@ -49,10 +50,9 @@ class PeyesC(Resource):
         else:
             print("[INFO] Get request received as trigger...")
             self.beep_blink(1, g_led_pin, 0.2)
-            inputQueue.put(1)
+            inputQueue.put(time.time())
             self.payload = "Trigger Sensor sent a get request!"
             self.payload = "Continuous ID process is already ON!"
-
         return self
 
     def render_GET_advanced(self, request, response):
@@ -83,11 +83,9 @@ class PeyesC(Resource):
 
     @staticmethod
     def beep_blink(blink_times, led_pin, duration=0.3):
-        import RPi.GPIO as GPIO
-        import time
-        print(platform.uname())
-        print(platform.uname()[1] == 'raspberrypi')
         if platform.uname()[1] == 'raspberrypi':
+            import RPi.GPIO as GPIO
+            import time
             for i in range(blink_times):
                 GPIO.output(beep_pin, GPIO.HIGH)
                 GPIO.output(led_pin, GPIO.HIGH)
