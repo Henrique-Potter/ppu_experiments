@@ -203,13 +203,13 @@ class PiFaceDet:
                 tm_counter = tm_counter + 1
                 time.sleep(5)
 
-            if save_trigger_metrics_counter > 10:
+            if tm_counter > 10:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
                     total_data_df.to_excel("trigger_metrics.xlsx")
                 except Exception as e:
                     print(e)
-                save_trigger_metrics_counter = 0
+                    tm_counter = 0
                 print('[INFO] Saving trigger metrics.')
                 print(total_data_df)
 
