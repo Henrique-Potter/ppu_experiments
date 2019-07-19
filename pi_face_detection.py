@@ -51,7 +51,7 @@ class PiFaceDet:
         self.face_counter = 0
 
         if os.path.exists("trigger_metrics.csv"):
-            self.trigger_metrics_list = pd.read_pickle(str("trigger_metrics.csv")).values.tolist()
+            self.trigger_metrics_list = pd.read_csv(str("trigger_metrics.csv")).values.tolist()
         else:
             self.trigger_metrics_list = []
 
@@ -127,8 +127,6 @@ class PiFaceDet:
         vs = self.get_cam()
         time.sleep(2.0)
         frame_count = 0
-
-        color = blue_color
 
         state_changed = False
         new_name = None
