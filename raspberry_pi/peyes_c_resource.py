@@ -5,8 +5,10 @@ from coapthon.resources.resource import Resource
 from multiprocessing import Process
 from pi_face_detection import PiFaceDet
 from threading import Lock
+import pandas as pd
 import platform
 import time
+import os
 
 peyes_lock = Lock()
 inputQueue = Queue(maxsize=5)
@@ -16,6 +18,13 @@ continuous_server = False
 beep_pin = 40
 g_led_pin = 36
 r_led_pin = 38
+
+counter = 10
+
+if os.path.exists("trigger_metrics_2.csv"):
+    trigger_metrics_2 = pd.read_csv("trigger_metrics_2.csv", index_col=False).values.tolist()
+else:
+    trigger_metrics_2 = []
 
 
 def start_face_det(learn_face_count):
@@ -64,18 +73,25 @@ class PeyesC(Resource):
         return self
 
     def render_POST(self, request):
-        
+
+        global counter, trigger_metrics_2
+
         res = PeyesC()
 
-        if continuous_server:
-            inputQueue.put(2)
-            inputQueue.put(2)
-            inputQueue.put(2)
-            inputQueue.put(2)
-            inputQueue.put(2)
-            res.payload = 'Request sent successfully'
-        else:
-            res.payload = 'ID server is not running'
+        trigger_metrics_2.append([0, time.time()])
+        counter = counter - 1
+
+        if counter < 1:
+            counter = 10
+
+            total_data_df = pd.DataFrame(trigger_metrics_2)
+            try:
+                total_data_df.to_csv("trigger_metrics_2.csv", index=False)
+            except Exception as e:
+                print(e)
+
+            print('[INFO] Saving trigger metrics 2.')
+            print(total_data_df)
 
         return res
 
