@@ -51,7 +51,7 @@ class PiFaceDet:
         self.face_counter = 0
 
         if os.path.exists("trigger_metrics.csv"):
-            self.trigger_metrics_list = pd.read_csv(str("trigger_metrics.csv")).values.tolist()
+            self.trigger_metrics_list = pd.read_csv("trigger_metrics.csv", index_col=False).values.tolist()
         else:
             self.trigger_metrics_list = []
 
@@ -187,7 +187,7 @@ class PiFaceDet:
                 print('[INFO - TRIG] Get received at:{} Save deadline:{}'.format(trigger_time_stamp, tm_counter))
 
             frame = vs.read()
-            frame = cv.flip(frame, 0)
+            #frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
@@ -204,7 +204,7 @@ class PiFaceDet:
             if tm_counter < 1:
                 total_data_df = pd.DataFrame(self.trigger_metrics_list)
                 try:
-                    total_data_df.to_csv("trigger_metrics.csv")
+                    total_data_df.to_csv("trigger_metrics.csv", index=False)
                 except Exception as e:
                     print(e)
                 tm_counter = 10
