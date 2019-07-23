@@ -187,7 +187,7 @@ class PiFaceDet:
                 print('[INFO - TRIG] Get received at:{} Save deadline:{}'.format(trigger_time_stamp, tm_counter))
 
             frame = vs.read()
-            #frame = cv.flip(frame, 0)
+            frame = cv.flip(frame, 0)
 
             start1 = time.time()
             face_found, faces_boxes = self.detect_face(frame)
