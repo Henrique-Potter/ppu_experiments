@@ -77,9 +77,11 @@ class PeyesC(Resource):
         global counter, trigger_metrics_2
 
         res = PeyesC()
-
-        trigger_metrics_2.append([0, time.time()])
+        time_stamp = time.time()
+        trigger_metrics_2.append([0, time_stamp])
         counter = counter - 1
+
+        print('[INFO - TRIG 2] Get received at:{} Save deadline:{}'.format(time_stamp, counter))
 
         if counter < 1:
             counter = 10
