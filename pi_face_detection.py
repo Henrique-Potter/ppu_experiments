@@ -181,10 +181,17 @@ class PiFaceDet:
         while True:
 
             if not process_queue.empty():
-                trigger_time_stamp = process_queue.get()
-                self.trigger_metrics_list.append([0, trigger_time_stamp])
-                tm_counter = tm_counter - 1
-                print('[INFO - TRIG] Get received at:{} Save deadline:{}'.format(trigger_time_stamp, tm_counter))
+                trigger_data = process_queue.get()
+
+                if trigger_data[0] == 1:
+                    self.trigger_metrics_list.append(trigger_data)
+                    tm_counter = tm_counter - 1
+                    print('[INFO - Micro Lidar] Get received at:{} Save deadline:{}'.format(trigger_data, tm_counter))
+
+                elif trigger_data[0] == 2:
+                    self.trigger_metrics_list.append(trigger_data)
+                    tm_counter = tm_counter - 1
+                    print('[INFO - Sonar] Get received at:{} Save deadline:{}'.format(trigger_data, tm_counter))
 
             frame = vs.read()
             frame = cv.flip(frame, 0)
@@ -195,10 +202,10 @@ class PiFaceDet:
             if face_found:
                 self.beep_blink(1, g_led_pin, 0.5)
                 time_stamp = time.time()
-                self.trigger_metrics_list.append([1, time_stamp])
+                self.trigger_metrics_list.append([0, time_stamp])
+                tm_counter = tm_counter - 1
                 print('[INFO - CAM] Get received at:{} Save deadline:{}'.format(time_stamp, tm_counter))
                 print('[INFO - CAM] Time to detect face: {}'.format(time.time() - start1))
-                tm_counter = tm_counter - 1
                 time.sleep(5)
 
             if tm_counter < 1:

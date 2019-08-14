@@ -60,7 +60,7 @@ class PeyesC(Resource):
         else:
             print("[INFO] Get request received as trigger...")
             self.beep_blink(2, g_led_pin, 0.1)
-            inputQueue.put(time.time())
+            inputQueue.put([1, time.time()])
             self.payload = "Trigger Sensor sent a get request!"
             self.payload = "Continuous ID process is already ON!"
         return self
@@ -74,26 +74,9 @@ class PeyesC(Resource):
 
     def render_POST(self, request):
 
-        global counter, trigger_metrics_2
-
         res = PeyesC()
-        time_stamp = time.time()
-        trigger_metrics_2.append([2, time_stamp])
-        counter = counter - 1
-
-        print('[INFO - TRIG 2] Get received at:{} Save deadline:{}'.format(time_stamp, counter))
-
-        if counter < 1:
-            counter = 10
-
-            total_data_df = pd.DataFrame(trigger_metrics_2)
-            try:
-                total_data_df.to_csv("trigger_metrics_2.csv", index=False)
-            except Exception as e:
-                print(e)
-
-            print('[INFO] Saving trigger metrics 2.')
-            print(total_data_df)
+        self.beep_blink(2, g_led_pin, 0.1)
+        inputQueue.put([2, time.time()])
 
         return res
 
