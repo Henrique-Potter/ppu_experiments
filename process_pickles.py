@@ -5,11 +5,12 @@ from pycocotools.coco import COCO
 import numpy as np
 from numpy import genfromtxt
 import matplotlib
-matplotlib.use('TkAgg')
 from matplotlib import pyplot
 from scipy.interpolate import griddata
 from mpl_toolkits.mplot3d import Axes3D
 from ppu_plotter import *
+
+matplotlib.use('TkAgg')
 
 
 def unite_results_data(path_generator, total_df_cache, keyp_coco, use_cache=False):
@@ -173,13 +174,13 @@ def generate_headers():
     return final_header
 
 
-def calculate_f1_matrix(total_gaussian_df):
+def calculate_f1_matrix(total_df):
     fm_f1_data = np.zeros([15, 15])
     hd_f1_data = np.zeros([15, 15])
     dist_data = np.zeros([15, 15])
-    total_faces = total_gaussian_df.iloc[0, 0]
+    total_faces = total_df.iloc[0, 0]
     row_count = 0
-    for row in total_gaussian_df.iterrows():
+    for row in total_df.iterrows():
         temp = 3
         for i in range(15):
             # Skip 10 by 10 columns to get the correct TP/FP/FN
@@ -208,6 +209,60 @@ def calculate_f1_matrix(total_gaussian_df):
 def normalize(x):
     x = np.asarray(x)
     return (x - x.min()) / (np.ptp(x))
+
+
+def plot_best_region(fm_f1_data, hd_f1_data, avg_time_trace, dist_data):
+
+    from matplotlib import cm
+
+    fm_f1_data = fm_f1_data.transpose()
+    hd_f1_data = hd_f1_data.transpose()
+    dist_data = dist_data.transpose()
+    dist_map = dist_data >= 1.1
+
+    best_for_user_map = fm_f1_data < hd_f1_data
+
+    allowed_user_map = np.multiply(dist_map, best_for_user_map)
+    best_for_user_values = np.multiply(allowed_user_map, hd_f1_data)
+
+    ax = plt.axes(projection='3d')
+
+    iterations = np.linspace(1, 15, num=15)
+    boxes = np.linspace(1, 15, num=15)
+    X, Y = np.meshgrid(iterations, boxes)
+
+    heat_map = normalize(Y * avg_time_trace[:15]).transpose()
+
+    s = ax.plot_surface(X, Y, np.divide(best_for_user_values, heat_map), facecolors=cm.Reds(heat_map), alpha=0.9)
+    #s = ax.plot_surface(X, Y, np.divide(best_for_user_values, heat_map), facecolors=cm.Reds(heat_map), alpha=0.9)
+
+    # Cut in human det
+    # range_hd_data = np.multiply(hd_f1_data > 0.3, hd_f1_data)
+    # best_solution = np.multiply(range_hd_data != 0, heat_map)
+    # s = ax.scatter(X, Y, np.multiply(range_hd_data, dist_map), alpha=0.9)
+
+    #cset = ax.scatter(X, Y, np.multiply(best_for_user_values.transpose(), heat_map.transpose()),)
+    #cset2 = ax.scatter(X, Y, fm_f1_data)
+    # cset = ax.contour(X, Y, fm_f1_data, zdir='y', offset=0)
+
+    #s2 = ax.plot_wireframe(X, Y, fm_f1_data.transpose(), alpha=0.8)
+
+    ax.set_title('Iteration x Box Size x F1')
+    yticks_text = ['{}x{}'.format(i, i) for i in range(3, 33, 2)]
+    xticks_text = [i for i in range(1, 16)]
+
+    ax.set_xlabel('Iteration', fontsize=15, labelpad=10)
+    ax.set_xticks(iterations)
+    ax.set_xticklabels(xticks_text)
+
+    ax.set_ylabel('Box Size', fontsize=15, labelpad=25)
+    ax.set_yticks(iterations)
+    ax.set_yticklabels(yticks_text, rotation=45)
+
+    ax.set_zlabel('F1', fontsize=15)
+
+    plt.show()
+    pass
 
 
 def regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data):
@@ -343,14 +398,14 @@ def process_pickles():
     key_points_annFile = './coco_annotations_db/person_keypoints2017.json'
     # Loading coco labels
     coco_true_labels = COCO(ins_annFile)
-    df_avg_pickles_paths = Path('F:/results').glob("*_avg_data.pkl")
+    df_avg_pickles_paths = Path('F:/results').glob("*[0-9]_avg_data.pkl")
 
-    df_gaussian_pickles_paths = Path('F:/results').glob("*_gaussian_data.pkl")
+    df_gaussian_pickles_paths = Path('F:/results').glob("*[0-9]_gaussian_data.pkl")
     df_median_pickles_paths = Path('F:/results').glob("*_median_data.pkl")
     df_bilateral_pickles_paths = Path('F:/results').glob("*_bilateralFiltering_data.pkl")
 
     full_avg_cache = 'F:/results/full_avg_results'
-    f1_fc_avg_cache = 'F:/results/f1_fc_avg_results'
+    f1_fc_avg_cache = 'F:/results/f1_fm_avg_results'
     hd_fc_avg_cache = 'F:/results/f1_hd_avg_results'
     full_gau_cache = 'F:/results/full_gaussian_results'
     full_med_cache = 'F:/results/full_med_results'
@@ -370,7 +425,8 @@ def process_pickles():
     pd.DataFrame(hd_f1_data).to_excel(hd_fc_avg_cache+".xlsx")
     pd.DataFrame(dist_data).to_excel(hd_fc_avg_cache + "dist.xlsx")
 
-    regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
+    plot_best_region(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
+    #regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
 
 
 if __name__ == "__main__":

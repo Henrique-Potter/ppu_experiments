@@ -57,7 +57,7 @@ class FaceMatch:
     def show_face_detection(img_cp, f_boxes):
 
         for f_box in f_boxes:
-            cv2.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (0,0,255), 2)
+            cv2.rectangle(img_cp, (f_box[0], f_box[1]), (f_box[2], f_box[3]), (0, 0, 255), 2)
             cv2.putText(img_cp, "Face", (f_box[2] + 10, f_box[3]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0))
 
         return img_cp
