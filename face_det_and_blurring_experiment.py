@@ -51,7 +51,7 @@ for image in images:
             img_base[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face
             faces_img[j] = face
 
-            cv.imshow("", img_base)
+            #cv.imshow("", img_base)
 
         print(i)
 
