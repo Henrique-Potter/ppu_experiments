@@ -37,38 +37,46 @@ once = 0
 
 for image in images:
 
-
     img_base = cv.imread(str(Path(image).resolve()))
     #cv.imshow("", img_base)
     input("Press Enter to continue...")
-    start = time.time()
 
-    test_results = []
+    box_iteration_results = []
 
-    for i in range(3, 32, 2):
+    for iteration in range(1, 16):
 
-        sample_times = []
+        box_test_results = []
 
-        for a in range(20):
+        for i in range(3, 32, 2):
 
-            start = time.time()
+            print("Iterations: {}".format(iteration))
+            print("Box size: {}x{}".format(i, i))
+            sample_times = []
 
-            img_base_faces_box = face_det.extract_face(img_base)
-            faces_img = extract_faces_imgs(img_base, img_base_faces_box)
+            for a in range(20):
 
-            for j in range(len(img_base_faces_box)):
-                face_img = faces_img[j]
-                face_box = img_base_faces_box[j]
-                face = cv.blur(face_img, (i, i))
-                img_base[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face
-                faces_img[j] = face
+                img_blur = img_base.copy()
+                start = time.time()
+                img_base_faces_box = face_det.extract_face(img_base)
+                faces_img = extract_faces_imgs(img_base, img_base_faces_box)
 
-            sample_times.append(time.time()-start)
+                for j in range(len(img_base_faces_box)):
+                    face_img = faces_img[j]
+                    face_box = img_base_faces_box[j]
 
-        test_results.append(np.average(sample_times))
+                    for k in range(iteration):
+                        face_img = cv.blur(face_img, (i, i))
 
-        print(test_results)
+                    img_blur[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face_img
 
-    dump_df = pd.DataFrame(data=test_results)
+                sample_times.append(time.time()-start)
+                print("Number of faces: {}".format(len(img_base_faces_box)))
+
+            box_test_results.append(np.average(sample_times))
+            print(box_test_results)
+
+        box_iteration_results.append(box_test_results)
+
+    dump_df = pd.DataFrame(data=box_iteration_results)
     dump_df.to_csv("face_detection_blur_results.csv")
 
