@@ -2,6 +2,9 @@ from ai import face_match as fm
 import argparse
 import numpy as np
 from pathlib import Path
+import cv2 as cv
+import time
+import pandas as pd
 
 
 def extract_faces_imgs(img, faces_boxes):
@@ -34,31 +37,38 @@ once = 0
 
 for image in images:
 
-    import cv2 as cv
-    import time
+
     img_base = cv.imread(str(Path(image).resolve()))
     #cv.imshow("", img_base)
     input("Press Enter to continue...")
-    start =  time.time()
+    start = time.time()
 
-    if once == 0:
-        once = 1
-        continue
-        
-    for i in range(3, 10000, 2):
+    test_results = []
 
-        img_base_faces_box = face_det.extract_face(img_base)
-        faces_img = extract_faces_imgs(img_base, img_base_faces_box)
-        print(len(img_base_faces_box))
-        for j in range(len(img_base_faces_box)):
-            face_img = faces_img[j]
-            face_box = img_base_faces_box[j]
-            face = cv.blur(face_img, (3, 3))
-            img_base[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face
-            faces_img[j] = face
+    for i in range(3, 32, 2):
 
-            #cv.imshow("", img_base)
+        sample_times = []
 
-        print(i)
+        for a in range(20):
 
+            start = time.time()
+
+            img_base_faces_box = face_det.extract_face(img_base)
+            faces_img = extract_faces_imgs(img_base, img_base_faces_box)
+
+            for j in range(len(img_base_faces_box)):
+                face_img = faces_img[j]
+                face_box = img_base_faces_box[j]
+                face = cv.blur(face_img, (i, i))
+                img_base[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face
+                faces_img[j] = face
+
+            sample_times.append(time.time()-start)
+
+        test_results.append(np.average(sample_times))
+
+        print(test_results)
+
+    dump_df = pd.DataFrame(data=test_results)
+    dump_df.to_csv("face_detection_blur_results.csv")
 
