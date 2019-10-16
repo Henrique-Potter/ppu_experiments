@@ -30,20 +30,26 @@ args = parser.parse_args()
 images = Path(args.images).glob("*.jpg")
 
 face_det = fm.FaceMatch(args.fid_m)
+once = 0
 
 for image in images:
 
     import cv2 as cv
-
+    import time
     img_base = cv.imread(str(Path(image).resolve()))
-    cv.imshow("", img_base)
+    #cv.imshow("", img_base)
     input("Press Enter to continue...")
+    start =  time.time()
 
+    if once == 0:
+        once = 1
+        continue
+        
     for i in range(3, 10000, 2):
 
         img_base_faces_box = face_det.extract_face(img_base)
         faces_img = extract_faces_imgs(img_base, img_base_faces_box)
-
+        print(len(img_base_faces_box))
         for j in range(len(img_base_faces_box)):
             face_img = faces_img[j]
             face_box = img_base_faces_box[j]
