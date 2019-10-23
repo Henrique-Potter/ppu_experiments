@@ -225,6 +225,8 @@ class PiFaceDet:
         time.sleep(2.0)
         fps = FPS().start()
 
+        print("Frame")
+
         color = blue_color
 
         while True:
