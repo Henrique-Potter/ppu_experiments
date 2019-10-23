@@ -29,7 +29,8 @@ else:
 
 def start_face_det(learn_face_count):
     f = PiFaceDet(preview=False)
-    f.continuous_face_detection(learn_face_count)
+    #f.continuous_face_detection(learn_face_count)
+    f.continuous_face_identification(learn_face_count)
 
 
 class PeyesC(Resource):
