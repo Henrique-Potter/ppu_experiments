@@ -225,7 +225,7 @@ class PiFaceDet:
         time.sleep(2.0)
         fps = FPS().start()
 
-        print("Frame")
+        print("before loop")
 
         color = blue_color
 
@@ -237,6 +237,8 @@ class PiFaceDet:
                 msg_code = None
 
             frame = vs.read()
+
+            print("frame")
 
             # if platform.uname()[1] == 'raspberrypi':
             #     frame = cv.flip(frame, 0)
