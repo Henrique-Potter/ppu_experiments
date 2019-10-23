@@ -75,8 +75,10 @@ class PeyesC(Resource):
     def render_POST(self, request):
 
         res = PeyesC()
-        self.beep_blink(2, g_led_pin, 0.1)
-        inputQueue.put([2, time.time()])
+        #self.beep_blink(2, g_led_pin, 0.1)
+        #inputQueue.put([2, time.time()])
+
+        inputQueue.put(2)
 
         return res
 
