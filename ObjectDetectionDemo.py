@@ -93,13 +93,13 @@ if __name__ == "__main__":
     while True:
 
         frame = vs.read()
-        #frame = cv.flip(frame, 0)
+        frame = cv.flip(frame, 0)
 
         start1 = time.time()
-
-        face_found, faces_boxes = detect_face(frame)
+        
+        #face_found, faces_boxes = detect_face(frame)
         h_boxes, h_scores, obj_map, num = human_det.process_frame(frame, 0.7, 1)
-        frame = show_detections(frame, h_boxes, faces_boxes, h_scores, obj_map,0.7)
+        frame = show_detections(frame, h_boxes, [], h_scores, obj_map,0.7)
 
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
