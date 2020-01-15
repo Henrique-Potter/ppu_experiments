@@ -38,7 +38,7 @@ once = 0
 for image in images:
 
     img_base = cv.imread(str(Path(image).resolve()))
-    #cv.imshow("", img_base)
+
     input("Press Enter to continue...")
 
     box_iteration_results = []
@@ -57,20 +57,14 @@ for image in images:
 
                 img_blur = img_base.copy()
                 start = time.time()
-                img_base_faces_box = face_det.extract_face(img_base)
-                faces_img = extract_faces_imgs(img_base, img_base_faces_box)
+                img_base_faces_box = face_det.extract_face(img_blur)
+                faces_img = extract_faces_imgs(img_blur, img_base_faces_box)
 
-                for j in range(len(img_base_faces_box)):
-                    face_img = faces_img[j]
-                    face_box = img_base_faces_box[j]
 
-                    for k in range(iteration):
-                        face_img = cv.blur(face_img, (i, i))
 
-                    img_blur[face_box[1]:face_box[3], face_box[0]:face_box[2], :] = face_img
 
                 sample_times.append(time.time()-start)
-                print("Number of faces: {}".format(len(img_base_faces_box)))
+                #print("Number of faces: {}".format(len(img_base_faces_box)))
 
             box_test_results.append(np.average(sample_times))
             print(box_test_results)
