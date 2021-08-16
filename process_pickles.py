@@ -180,6 +180,7 @@ def calculate_f1_matrix(total_df):
     dist_data = np.zeros([15, 15])
     total_faces = total_df.iloc[0, 0]
     row_count = 0
+
     for row in total_df.iterrows():
         temp = 3
         for i in range(15):
@@ -400,6 +401,8 @@ def process_pickles():
     coco_true_labels = COCO(ins_annFile)
     df_avg_pickles_paths = Path('F:/results').glob("*[0-9]_avg_data.pkl")
 
+    df_face_avg_pickles_paths = Path('F:/results').glob("*bface_avg_data.pkl")
+
     df_gaussian_pickles_paths = Path('F:/results').glob("*[0-9]_gaussian_data.pkl")
     df_median_pickles_paths = Path('F:/results').glob("*_median_data.pkl")
     df_bilateral_pickles_paths = Path('F:/results').glob("*_bilateralFiltering_data.pkl")
@@ -410,22 +413,29 @@ def process_pickles():
     full_gau_cache = 'F:/results/full_gaussian_results'
     full_med_cache = 'F:/results/full_med_results'
     full_bila_cache = 'F:/results/full_bila_results'
+    full_facedet_avg_cache = 'F:/results/full_facedet_avg_results'
 
     avg_time_trace = genfromtxt('./power_traces/blur_times_avg_box.csv', delimiter=',')
     gaussian_time_trace = genfromtxt('./power_traces/blur_times_gaussian_box.csv', delimiter=',')
     bilateral_time_trace = genfromtxt('./power_traces/blur_times_bilateral_box.csv', delimiter=',')
     median_time_trace = genfromtxt('./power_traces/blur_times_median_box.csv', delimiter=',')
 
-    # Generating totals and charts
-    total_gaussian_df = unite_results_data(df_avg_pickles_paths, full_avg_cache, coco_true_labels, True)
+    # generating totals and charts
+    # total_gaussian_df = unite_results_data(df_avg_pickles_paths, full_avg_cache, coco_true_labels, True)
 
-    fm_f1_data, hd_f1_data, dist_data = calculate_f1_matrix(total_gaussian_df)
+    total_df = unite_results_data(df_face_avg_pickles_paths, full_facedet_avg_cache, coco_true_labels, True)
 
-    pd.DataFrame(fm_f1_data).to_excel(f1_fc_avg_cache+".xlsx")
-    pd.DataFrame(hd_f1_data).to_excel(hd_fc_avg_cache+".xlsx")
-    pd.DataFrame(dist_data).to_excel(hd_fc_avg_cache + "dist.xlsx")
+    fm_f1_data, hd_f1_data, dist_data = calculate_f1_matrix(total_df)
 
-    plot_best_region(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
+    # pd.DataFrame(fm_f1_data).to_excel(f1_fc_avg_cache+".xlsx")
+    # pd.DataFrame(hd_f1_data).to_excel(hd_fc_avg_cache+".xlsx")
+    # pd.DataFrame(dist_data).to_excel(hd_fc_avg_cache + "dist.xlsx")
+
+    pd.DataFrame(fm_f1_data).to_excel("F:/results/f1_fm_fdet_results.xlsx")
+    pd.DataFrame(hd_f1_data).to_excel("F:/results/f1_hd_fdet_results.xlsx")
+    pd.DataFrame(dist_data).to_excel("F:/results/f1_dist_fdet_results.xlsx")
+
+    #plot_best_region(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
     #regression_3d(fm_f1_data, hd_f1_data, avg_time_trace, dist_data)
 
 
